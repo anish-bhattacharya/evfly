@@ -1,0 +1,11 @@
+<launch>
+
+    <!-- event camera driver -->
+    <include file="$(find data_gather)/launch/events_metavision-ros.launch"/>
+    <!-- <include file="$(find data_gather)/launch/events_prophesee-ros.launch"/> -->
+    <!-- <include file="$(find data_gather)/launch/events_dv-ros.launch"/> -->
+
+    <!-- d435 depth camera -->
+    <include file="$(find data_gather)/launch/d435.launch"/>
+
+</launch>

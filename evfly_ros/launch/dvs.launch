@@ -1,0 +1,9 @@
+<launch>
+
+	<!-- <include file="$(find dvs_renderer)/launch/davis_mono.launch"/> -->
+
+	<!-- camera driver -->
+	<node name="davis_ros_driver" pkg="davis_ros_driver" type="davis_ros_driver" />
+
+
+</launch>

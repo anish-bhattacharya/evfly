@@ -1,0 +1,16 @@
+<launch>    
+
+  <node pkg="prophesee_ros_driver" type="prophesee_ros_publisher" name="prophesee_ros_publisher" respawn="false" output="screen">
+    <param name="camera_name" value="camera" />
+    <param name="publish_cd" value="true" />
+
+    <!-- Path to the file with the camera settings -->
+    <param name="bias_file" value="/home/anish/evfly_ws/src/evfly/evfly/configs/prophesee_bias.bias"/>
+
+    <!-- approximate time span in seconds for which events will
+	 be aggregated until a ROS message is generated. Defaults to
+	 100 usec -->
+    <param name="event_delta_t" value="0.001" />
+  </node>
+
+</launch>

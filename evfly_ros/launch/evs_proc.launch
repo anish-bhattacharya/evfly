@@ -1,0 +1,20 @@
+<launch>
+
+	<!-- camera driver -->
+	<!-- <node name="davis_ros_driver" pkg="davis_ros_driver" type="davis_ros_driver" /> -->
+	<!-- <include file="$(find dvs_renderer)/launch/davis_mono.launch"/> -->
+	<include file="$(find evfly_ros)/launch/prophesee.launch">
+		<arg name="bias_file" value="/home/anish/evfly_ws/src/evfly/evfly_ros/configs/prophesee_bias.bias"/>
+		<arg name="event_delta_t" value="0.01"/>
+	</include>
+
+	<!-- process evs and republish -->
+	<node name="process_evs_and_republish_node" pkg="evfly_ros" type="node" />
+
+	<!-- model load & run node -->
+	<node name="run_model_node" pkg="evfly_ros" type="run.py" output="screen" />
+
+    <!-- bagging -->
+	<!-- <node pkg="rosbag" type="record" name="record_bag" args="-o /home/quadrotor/evfly-bags/evfly <listed topics>" output="screen"/> -->
+
+</launch>

@@ -1,0 +1,73 @@
+device = cuda
+basedir = /home/anish1/evfly_ws/src/evfly
+logdir = learner/logs
+datadir = ../../data/datasets
+
+dataset = [sim_forest]
+evs_min_cutoff = 0
+rescale_depth = 1.0
+rescale_evs = -1.0
+align_evframe = True
+data_augmentation = 1
+domain_randomization = 0.0
+use_h5 = True
+do_transform = False
+keep_collisions = True
+events = evs_frames
+val_split = 0.15
+split_method = train-val
+short = 0
+seed = 7
+batch_size = 64
+
+N_eps = 1000
+print_trainprogress_freq = 10
+save_model_freq = 10
+val_freq = 10
+eval_tools_freq = 0
+eval_tools_on_best = True
+load_trainval = True
+combine_checkpoints = True
+checkpoint_path = ''
+
+lr = 1e-4
+lr_warmup_epochs = 0
+lr_decay = False
+loss_weights = [10.0, 1.0]
+optional_loss_param = [5.0, -1.0]
+
+model_type = OrigUNet
+skip_type = interp
+velpred = 0
+num_in_channels = 2
+bev = 2
+num_out_channels = 1
+num_recurrent = [1, 0]
+num_outputs = 1
+resize_input = [260, 346]
+
+enc_num_layers = 2
+enc_kernel_sizes = [5, 3]
+enc_kernel_strides = [2, 2]
+enc_out_channels = [8, 32]
+enc_activations = [relu, relu]
+enc_pool_type = max
+enc_invert_pool_inputs = True
+enc_pool_kernels = [2, 2]
+enc_pool_strides = [2, 2]
+enc_conv_function = conv2d
+
+dec_num_layers = 3
+dec_kernel_sizes = [3, 5, 7]
+dec_kernel_strides = [1, 3, 5]
+dec_out_channels = [16, 4, 1]
+dec_activations = [leaky_relu, leaky_relu, sigmoid]
+dec_pool_type = none
+dec_pool_kernels = [2, 2, 2]
+dec_pool_strides = [2, 2, 2]
+dec_conv_function = upconv2d
+
+fc_num_layers = 4
+fc_layer_sizes = [1024, 128, 16, 1]
+fc_activations = [leaky_relu, leaky_relu, leaky_relu, tanh]
+fc_dropout_p = 0.1

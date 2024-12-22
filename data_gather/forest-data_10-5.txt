@@ -1,0 +1,25 @@
+forest data 10-5-24
+----
+
+three sequences
+
+[done] a 17-58 and 
+[done] b 18-02 standard w bias similar walking among trees
+[done] c 18-11 w/out bias file
+[done] d 18-18 with "sparse" bias file -- failed!
+[done] e 18-23 redo with sparse bias file
+
+[done] f 18-34 location at washington turnpike and bulltown rd crossing (vehicle restr sign)
+[done] g 18-38 another but more angles and ground
+
+[done] h 19-04 same place but much darker
+i 19-07 redo (with no bias file?)
+j 19-13 redo but with IR on d435 off to demonstrate bad depth recon with standard cam
+
+
+on dgx as of morning 10-9
+10-5- (bags)b,d  (datasets)a,c,e,f,h
+
+h5: c,f,h
+in progress: a,e,g
+

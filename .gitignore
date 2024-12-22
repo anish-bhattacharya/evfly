@@ -1,0 +1,62 @@
+evaluation.yaml
+envtest/ros/summary.yaml
+
+# Python stuff
+*.pyc
+*__pycache__
+
+# Compile Commands
+*/compile_commands.json
+*/.clangd
+.clang-format
+
+# VScode stuff
+.vscode/*
+
+# CLion Stuff
+.idea/
+cmake-build-debug/
+
+*.swp
+# Vim Stuff
+Session.vim
+
+# Tag files
+TAGS
+GTAGS
+GRTAGS
+GPATH
+
+# temporary files
+*~
+
+.history/*
+.vscode/*
+
+saved
+
+learner/.vscode/*
+learner/logs
+learner/temp.png
+learner/data/
+*.code-workspace
+envtest/ros/train_set.zip
+envtest/ros/train_set/
+envtest/ros/temp.py
+envtest/ros/model.pth
+
+*model*.pth
+*animation*.gif
+
+utils/stored_metrics/*
+*.dat
+*/summary.yaml
+envtest/ros/*set/
+build/
+
+utils/stored_metrics/tmp
+
+data/
+
+*.bag
+
