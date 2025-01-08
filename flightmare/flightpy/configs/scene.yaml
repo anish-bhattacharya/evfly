@@ -1,0 +1,19 @@
+scene_0:
+  name: "empty"
+  render_offset: [0, 0, 0]
+
+scene_1:
+  name: "industrial"
+  render_offset: [0, -30, 1]
+
+scene_2:
+  name: "warehouse"
+  render_offset: [0, 0, 0]
+
+scene_3:
+  name: "forest"
+  render_offset: [21, 217, 94]
+
+# scene_4:
+#   name: "street"
+#   render_offset: [-9.38, -12.66, 0.1]
