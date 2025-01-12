@@ -1,0 +1,11 @@
+<launch>
+
+    <include file="$(find dv_ros_accumulation)/launch/accumulation.launch"/>
+
+    <!-- camera driver -->
+    <node name="event_publisher_node" pkg="evfly_dv_ros" type="node" output="screen">
+    </node>
+    <node name="run_model_node" pkg="evfly_ros" type="run.py" output="screen">
+    </node>
+
+</launch>
