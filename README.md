@@ -46,13 +46,13 @@ We demonstrate this across two quadrotor-event camera platforms in multiple sett
 
 We successfully avoid obstacles at speeds of 1-5m/s, indoor and outdoor, in the dark and in the forest.
 
-<img src="media/forest/dji-lowres.gif" width="462" height="260"> <img src="media/forest/evs-lowres.gif" width="347" height="260">
+<img src="media/forest/dji-lowres.gif" width="347" height="195"> <img src="media/forest/evs-lowres.gif" width="260" height="195">
 
-<img src="media/dark/perspective-view-lowres.gif" width="462" height="260"> <img src="media/dark/evs-lowres.gif" width="347" height="260">
+<img src="media/dark/perspective-view-lowres.gif" width="347" height="195"> <img src="media/dark/evs-lowres.gif" width="260" height="195">
 
-<img src="media/multi/perspview-lowres.gif" width="462" height="260"> <img src="media/multi/evs-lowres.gif" width="347" height="260">
+<img src="media/multi/perspview-lowres.gif" width="347" height="195"> <img src="media/multi/evs-lowres.gif" width="260" height="195">
 
-<img src="media/penno/perspview-lowres.gif" width="462" height="260"> <img src="media/penno/evs-lowres.gif" width="347" height="260">
+<img src="media/penno/perspview-lowres.gif" width="347" height="195"> <img src="media/penno/evs-lowres.gif" width="260" height="195">
 
 ## Simulator installation
 
