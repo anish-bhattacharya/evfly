@@ -20,7 +20,6 @@ from math import radians, sin, cos
 
 from dataloading import *
 from learner_models import *
-import vitfly_models
 if not DEPLOYMENT:
     from evaluation_tools import eval_plotter
 
@@ -234,7 +233,7 @@ class Learner:
             self.checkpoint_path = self.checkpoint_path[0]
 
         if self.events != '':
-            if self.do_transform:
+            if self.do_transform: # legacy
                 self.events += '_tf.npy'
             else:
                 self.events += '.npy'
@@ -341,19 +340,8 @@ class Learner:
 
                 self.mylogger('[SETUP] Establishing model and optimizer.')
 
-                if self.model_type == 'ConvUNet_w_VelPred':
+                if self.model_type == 'ConvNet_w_VelPred':
 
-                    self.model = ConvUNet_w_VelPred(num_in_channels=self.num_in_channels, num_out_channels=self.num_out_channels, num_recurrent=self.num_recurrent, num_outputs=self.num_outputs, enc_params=self.enc_params, dec_params=self.dec_params, input_shape=self.train_ims.shape, logger=self.mylogger).to(self.device).float()
-
-                elif self.model_type == 'ConvUNet':
-
-                    self.model = ConvUNet(num_in_channels=self.num_in_channels, num_out_channels=self.num_out_channels, num_recurrent=self.num_recurrent, enc_params=self.enc_params, dec_params=self.dec_params, input_shape=self.train_ims.shape, logger=self.mylogger).to(self.device).float()
-
-                elif self.model_type == 'ConvUNet_w_ConvUNet_w_VelPred':
-                    
-                    self.model = ConvUNet_w_ConvUNet_w_VelPred(num_in_channels=self.num_in_channels, num_out_channels=self.num_out_channels, num_recurrent=self.num_recurrent, num_outputs=self.num_outputs, enc_params=self.enc_params, dec_params=self.dec_params, input_shape=self.train_ims.shape, logger=self.mylogger).to(self.device).float()
-                
-                elif self.model_type == 'ConvNet_w_VelPred':
                     self.model = ConvNet_w_VelPred(num_in_channels=self.num_in_channels, num_recurrent=self.num_recurrent[1], num_outputs=self.num_outputs, enc_params=self.enc_params, fc_params=self.fc_params, input_shape=[1, 1, self.resize_input[0], self.resize_input[1]], logger=self.mylogger).to(self.device).float()
 
                 elif self.model_type == 'OrigUNet':
@@ -362,79 +350,18 @@ class Learner:
 
                     self.model = OrigUNet(num_in_channels=self.num_in_channels, num_out_channels=self.num_out_channels, num_recurrent=self.num_recurrent, input_shape=self.train_ims.shape, logger=self.mylogger, velpred=self.velpred, enc_params=self.enc_params, fc_params=self.fc_params, form_BEV=self.bev, evs_min_cutoff=self.evs_min_cutoff, skip_type=self.skip_type).to(self.device).float()
 
-                elif self.model_type == 'OrigUNet_w_ConvUNet_w_VelPred':
-                    
-                    self.model = OrigUNet_w_ConvUNet_w_VelPred(num_in_channels=self.num_in_channels, num_out_channels=self.num_out_channels, num_recurrent=self.num_recurrent, input_shape=self.train_ims.shape, logger=self.mylogger, old_model=False, velpred=self.velpred, enc_params=self.enc_params, dec_params=self.dec_params, fc_params=self.fc_params, num_outputs=self.num_outputs, evs_min_cutoff=self.evs_min_cutoff, skip_type=self.skip_type).to(self.device).float()
-
-                ## N/D models
-                elif self.model_type == 'VITFLY_ConvNet':
-                    self.model = vitfly_models.ConvNet().to(self.device).float()
-                elif self.model_type == 'VITFLY_UNetConvLSTMNet':
-                    self.model = vitfly_models.UNetConvLSTMNet().to(self.device).float()
                 else:
+
                     self.mylogger(f'[SETUP] Invalid model_type {self.model_type}. Exiting.')
                     exit()
 
             # if multiple model types need initialization, then write custom code snippets here to do so
             else:
+
                 self.mylogger(f'[SETUP] Multiple model types {self.model_type} provided.')
                 
-                if self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'VITFLY_ConvNet':
                     self.mylogger(f'[SETUP] Creating model of type {self.model_type[0]} and {self.model_type[1]}')
-                    self.model = OrigUNet_w_VITFLY_ConvNet(
-                        num_in_channels=self.num_in_channels,
-                        num_out_channels=self.num_out_channels,
-                        num_recurrent=self.num_recurrent,
-                        input_shape=self.train_ims.shape,
-                        logger=self.mylogger,
-                        velpred=self.velpred,
-                        enc_params=self.enc_params,
-                        dec_params=self.dec_params,
-                        fc_params=self.fc_params,
-                        form_BEV=self.bev,
-                        evs_min_cutoff=self.evs_min_cutoff,
-                        skip_type=self.skip_type,
-                        is_deployment=False
-                    ).to(self.device).float()
-
-                elif self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'VITFLY_ViT':
-                    self.mylogger(f'[SETUP] Creating model of type {self.model_type[0]} and {self.model_type[1]}')
-                    self.model = OrigUNet_w_VITFLY_ViT(
-                        num_in_channels=self.num_in_channels, 
-                        num_out_channels=self.num_out_channels,
-                        num_recurrent=self.num_recurrent, 
-                        input_shape=[1, 1, self.resize_input[0], self.resize_input[1]], 
-                        logger=self.mylogger,
-                        velpred=self.velpred, 
-                        enc_params=self.enc_params, 
-                        dec_params=self.dec_params, 
-                        fc_params=self.fc_params, 
-                        form_BEV=self.bev,
-                        evs_min_cutoff=self.evs_min_cutoff,
-                        skip_type=self.skip_type, 
-                        is_deployment=False,
-                    ).to(self.device).float()
-
-                elif self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'VITFLY_UNet':
-                    self.mylogger(f'[SETUP] Creating model of type {self.model_type[0]} and {self.model_type[1]}')
-                    self.model = OrigUNet_w_VITFLY_UNet(
-                        num_in_channels=self.num_in_channels, 
-                        num_out_channels=self.num_out_channels,
-                        num_recurrent=self.num_recurrent, 
-                        input_shape=[1, 1, self.resize_input[0], self.resize_input[1]], 
-                        logger=self.mylogger,
-                        velpred=self.velpred, 
-                        enc_params=self.enc_params, 
-                        dec_params=self.dec_params, 
-                        fc_params=self.fc_params, 
-                        form_BEV=self.bev,
-                        evs_min_cutoff=self.evs_min_cutoff,
-                        skip_type=self.skip_type, 
-                        is_deployment=False,
-                    ).to(self.device).float()
-
-                elif self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'VITFLY_ViTLSTM':
-                    self.mylogger(f'[SETUP] Creating model of type {self.model_type[0]} and {self.model_type[1]}')
+                if self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'VITFLY_ViTLSTM':
                     self.model = OrigUNet_w_VITFLY_ViTLSTM(
                         num_in_channels=self.num_in_channels, 
                         num_out_channels=self.num_out_channels,
@@ -485,21 +412,8 @@ class Learner:
 
             self.total_its = self.num_eps_trained * self.num_training_steps
 
-        ################
-        ## ESIM TORCH ##
-        ################
-
-        if self.domain_randomization != 0.0:
-            import esim_torch
-            self.esim = esim_torch.ESIM()
-            # # try to change parameters
-            # esim.contrast_threshold_neg = 0.1
-            # esim.contrast_threshold_pos = 0.1
-            # esim.refractory_period_ns = 1e6
-            # print(f'{esim.contrast_threshold_neg}, {esim.contrast_threshold_pos}, {esim.refractory_period_ns}')
-            # print('it worked!')
-            # exit()
-
+    # a useful logger that prints messages to stdout and writes them to a logfile
+    # it chunks messages based on their tags at the beginning of each message
     def mylogger(self, msg):
         # Extract the tag from the message using square brackets
         tag = msg.split('[')[1].split(']')[0] if '[' in msg and ']' in msg else None
@@ -560,19 +474,12 @@ class Learner:
             # if model contains multiple model components, load each individually
             if not isinstance(self.model_type, list) or (isinstance(self.model_type, list) and len(self.model_type) == 1):
 
-                if self.model_type == 'ConvUNet_w_ConvUNet_w_VelPred':
-                    self.model.convunet.load_state_dict(torch.load(checkpoint_path[0], map_location=self.device))
-                    self.model.convunet_w_velpred.load_state_dict(torch.load(checkpoint_path[1], map_location=self.device))
-                elif self.model_type == 'OrigUNet_w_ConvUNet_w_VelPred':
+                if self.model_type == 'OrigUNet_w_ConvUNet_w_VelPred':
                     self.model.origunet.load_state_dict(torch.load(checkpoint_path[0], map_location=self.device))
                     self.model.convunet_w_velpred.load_state_dict(torch.load(checkpoint_path[1], map_location=self.device))
                 else:
                     self.model.load_state_dict(torch.load(checkpoint_path, map_location=self.device), strict=False)
                     
-            elif self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'VITFLY_ConvNet':
-                self.model.origunet.load_state_dict(torch.load(checkpoint_path[0], map_location=self.device))
-                self.model.vitfly_convnet.load_state_dict(torch.load(checkpoint_path[1], map_location=self.device))
-
             elif isinstance(self.model_type, list) and self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'VITFLY_ViTLSTM':
 
                 self.model.origunet.load_state_dict(torch.load(checkpoint_path[0], map_location=self.device))
@@ -606,7 +513,6 @@ class Learner:
         self.val_dirs_ids = []
 
         self.dataset_numtrajs = []
-        # self.dataset_lengths = []
 
         for data_dir in self.dataset_dir:
 
@@ -616,154 +522,15 @@ class Learner:
 
             self.mylogger(f'[DATALOADER] Loading from {data_dir} from set {self.dataset_dir}')
             
-            is_m3ed = 'm3ed' in data_dir or 'M3ED' in data_dir
-            is_real = 'real' in data_dir or 'REAL' in data_dir
-
-            if not is_m3ed:
-
-                train_data, val_data, is_png = dataloader(data_dir_fullpath, val_split=val_split, short=short, seed=seed, train_val_dirs=train_val_dirs, events=events, keep_collisions=keep_collisions, logger=self.mylogger, do_clean_dataset=False, do_transform=self.do_transform, use_h5=self.use_h5, resize_input=self.resize_input, split_method=self.split_method, rescale_depth=self.rescale_depth, rescale_evs=self.rescale_evs, evs_min_cutoff=self.evs_min_cutoff)
-                
-                # temporarily spoof train data as val data
-                # val_data = train_data
-
-                train_meta, (train_ims, train_depths), train_trajlength, train_desvel, train_evs, train_dirs, train_dirs_ids = train_data
-                
-                val_meta, (val_ims, val_depths), val_trajlength, val_desvel, val_evs, val_dirs, val_dirs_ids = val_data
+            train_data, val_data, is_png = dataloader(data_dir_fullpath, val_split=val_split, short=short, seed=seed, train_val_dirs=train_val_dirs, events=events, keep_collisions=keep_collisions, logger=self.mylogger, do_clean_dataset=False, do_transform=self.do_transform, use_h5=self.use_h5, resize_input=self.resize_input, split_method=self.split_method, rescale_depth=self.rescale_depth, rescale_evs=self.rescale_evs, evs_min_cutoff=self.evs_min_cutoff)
             
-            else:
+            # temporarily spoof train data as val data
+            # val_data = train_data
 
-                self.mylogger(f'[DATALOADER] Found M3ED dataset')
-
-                is_png = True
-
-                # load depth and evframes
-                # assume they are in npy files, data_dir/depth.npy and data_dir/evframes.npy
-
-                # load depth
-                import pickle
-                depth_file = opj(data_dir_fullpath, 'depths.pkl')
-                # depths = np.load(depth_file)
-                with open(depth_file, 'rb') as f:
-                    depths = pickle.load(f)
-
-                # load evframes
-                evframes_file = opj(data_dir_fullpath, 'evframes.pkl')
-                # evframes = np.load(evframes_file)
-                with open(evframes_file, 'rb') as f:
-                    evframes = pickle.load(f)
-
-                # some checks
-                depth_shape = depths.shape
-                evframes_shape = evframes.shape
-                if depth_shape[0] != evframes_shape[0]:
-                    self.mylogger(f'[M3ED DATALOADER] Depth and evframes have different number of trajectories, exiting')
-                    exit()
-                for traj_i in range(depth_shape[0]):
-                    depth_shape = depths[traj_i].shape
-                    evframes_shape = evframes[traj_i].shape
-                    if depth_shape != evframes_shape:
-                        self.mylogger(f'[M3ED DATALOADER] Depth and evframes have different number or size of frames in trajectory {traj_i}, exiting')
-                        exit()
-
-                # TODO NOTE not train-val splitting m3ed data since it is a small dataset
-
-                # # split into train-val and concatenate
-                # numtrain = int((1.0-val_split)*depths.shape[0])
-                # train_depths = depths[:numtrain]
-                # val_depths = depths[numtrain:]
-                # train_evframes
-
-                train_depths = torch.cat([torch.tensor(depths[traj_i], dtype=torch.float32, device='cpu') for traj_i in range(depths.shape[0])], axis=0)
-                # make evs a np object array of torch tensors but cut out the first frame to match non-m3ed dataset style
-                train_evs = []
-                for traj_i in range(depths.shape[0]):
-                    train_evs.append(torch.tensor(evframes[traj_i][1:], dtype=torch.float32, device='cpu'))
-                train_evs = np.array(train_evs, dtype=object) # NOTE this takes forever, maybe it doesn't have to be a numpy array
-
-                # optional resizing (borrowed from dataloading.py)
-                if self.resize_input is not None and \
-                    (train_depths[0].shape[-2:] != torch.Size(self.resize_input) or 
-                    (train_evs[0].shape[-2:] != torch.Size(self.resize_input))):
-
-                    self.mylogger(f'[M3ED DATALOADER] Resizing input images to {self.resize_input}')
-                    resize_st_t = time.time()
-                    # depths
-                    # for depth_i, depth in enumerate(train_depths):
-                    train_depths = torch.nn.functional.interpolate(train_depths.unsqueeze(1), size=self.resize_input, mode='bilinear', align_corners=False).squeeze()
-                    # evs
-                    if train_evs is not None:
-                        for ev_i, ev in enumerate(train_evs):
-                            train_evs[ev_i] = torch.nn.functional.interpolate(ev.unsqueeze(1), size=self.resize_input, mode='bilinear', align_corners=False).squeeze()
-                    im_h, im_w = self.resize_input
-                    self.mylogger(f'[M3ED DATALOADER] Time to resize input images: {time.time()-resize_st_t:.3f}s')
-
-                max_depth_val = torch.max(train_depths)
-                min_depth_val = torch.min(train_depths)
-                self.mylogger(f'[M3ED DATALOADER] Rescaling depth by {self.rescale_depth}\tNOTE max/min of dataset depth is {max_depth_val}/{min_depth_val}.')
-
-                # rescale depths and evs
-                if self.rescale_depth > 0.0:
-                    train_depths = torch.clamp(train_depths/self.rescale_depth, 0.0, 1.0)
-
-                max_evs_val = max([torch.max(ev) for ev in train_evs])
-                min_evs_val = min([torch.min(ev) for ev in train_evs])
-                self.mylogger(f'[M3ED DATALOADER] Rescaling evs = {self.rescale_evs}\tNOTE max/min of dataset evs is {max_evs_val}/{min_evs_val}.')
-
-                if self.rescale_evs > 0.0:
-                    for ev_i, ev in enumerate(train_evs):
-                        train_evs[ev_i] = torch.clamp(ev/self.rescale_evs, -1.0, 1.0)
-
-                # rescale by maximum of each frame
-                elif self.rescale_evs == -1.0:
-
-                    # event frames can have wildly large values for a single pixel (2-12_0-99 dataset has max/min around 22.0/-22.0), throwing scaling off
-                    # so, clamp frames to values set by the 97th percentile of the data
-                    percentile_vals = []
-                    for ev_i, ev in enumerate(train_evs):
-                        maxvals = torch.quantile(torch.abs(ev[ev!=0.0]).view(ev.shape[0], -1), 0.97, dim=1) # per-frame 97th percentile
-                        percentile_vals.append(maxvals.mean())
-                        maxvals = maxvals.view(ev.shape[0], 1, 1)
-                        train_evs[ev_i] = torch.clamp(ev / maxvals, -1.0, 1.0)
-
-                    self.mylogger(f'[M3ED DATALOADER] Rescaling evs by 99.9th percentile of each frame, first and last traj 99.9th mean percentile values are {percentile_vals[0]:.2f} and {percentile_vals[-1]:.2f}')
-
-                    # for ev_i, ev in enumerate(train_evs):
-                    #     # since there may be erroneously large pixel values, use a percentile of the data to compute the "max" scaling factor
-                    #     maxvals = torch.max(torch.abs(ev).view(ev.shape[0], -1), dim=1).values
-                    #     maxvals = maxvals.view(ev.shape[0], 1, 1)
-                    #     train_evs[ev_i] = ev / maxvals
-
-                ### manually filtering out small-value events
-                self.mylogger(f'[M3ED DATALOADER] Manually filtering out small-value events in range (-{self.evs_min_cutoff}, {self.evs_min_cutoff})')
-                for ev_i, ev in enumerate(train_evs):
-                    train_evs[ev_i][ev.abs() < self.evs_min_cutoff] = 0.0
-
-                # split off some data from the last sequence as a val set
-                val_depths = train_depths[-300:]
-                train_depths = train_depths[:-300]
-                val_evs = np.array([train_evs[-1][-300+1:]], dtype=object)
-                train_evs[-1] = train_evs[-1][:-300]
-
-                val_meta = np.zeros((val_depths.shape[0], 21), dtype=np.float32)
-                val_meta[:, 13] = 4.0 # forward velocity
-                val_ims = np.ones((val_depths.shape[0], self.resize_input[0], self.resize_input[1]), dtype=np.float32)
-                val_desvel = 4.0 * np.ones((val_depths.shape[0]), dtype=np.float32)
-                val_dirs = [opj(data_dir_fullpath, f'{i+train_evs.shape[0]}') for i in range(val_depths.shape[0])] # fake folder names
-                val_dirs_ids = list(range(len(val_dirs)))
-
-                val_trajlength = [val_evs[traj_i].shape[0]+1 for traj_i in range(val_evs.shape[0])]
-
-                # spoof the rest of the data
-                # train_meta, (train_ims, train_depths), train_trajlength, train_desvel, train_evs, train_dirs, train_dirs_ids = train_data
-                train_meta = np.zeros((train_depths.shape[0], 21), dtype=np.float32)
-                train_meta[:, 13] = 4.0 # forward velocity
-                train_ims = np.ones((train_depths.shape[0], self.resize_input[0], self.resize_input[1]), dtype=np.float32)
-                train_desvel = 4.0 * np.ones((train_depths.shape[0]), dtype=np.float32)
-                train_dirs = [opj(data_dir_fullpath, f'{i}') for i in range(depths.shape[0])] # fake folder names
-                train_dirs_ids = list(range(len(train_dirs)))
-
-                train_trajlength = [train_evs[traj_i].shape[0]+1 for traj_i in range(train_evs.shape[0])]
-
+            train_meta, (train_ims, train_depths), train_trajlength, train_desvel, train_evs, train_dirs, train_dirs_ids = train_data
+            
+            val_meta, (val_ims, val_depths), val_trajlength, val_desvel, val_evs, val_dirs, val_dirs_ids = val_data
+        
             self.mylogger(f'[DATALOADER] Dataloading done | train images {train_ims.shape}, val images {val_ims.shape}')
 
             ## Preloading
@@ -773,7 +540,6 @@ class Learner:
 
             val_meta, val_ims, val_depths, val_desvel, val_evs = preload((val_meta, val_ims, val_depths, val_desvel, val_evs), 'cpu')
 
-            # self.mylogger(f'[DATALOADER] Preloading into device {self.device} done')
             self.mylogger(f'[DATALOADER] Loaded data onto cpu memory as torch tensors')
 
             ## Checks
@@ -816,7 +582,6 @@ class Learner:
             self.val_dirs_ids.append(val_dirs_ids)
 
             self.dataset_numtrajs.append((len(train_trajlength), len(val_trajlength)))
-            # self.dataset_lengths.append((train_ims.shape[0], val_ims.shape[0]))
 
         # concatenate all data
         # trajstarts, not computed here, must now add up each previous dataset's trajlengths
@@ -1213,75 +978,13 @@ class Learner:
             elif self.num_in_channels == 2:
 
                 # traditional method of loading pre-computed event frames
-                if mode != 'train' or self.domain_randomization == 0.0:
+                if mode != 'train':
 
                     if evs is not None:
                         traj_input = evs[traj_ids[it]][batch_ids-1-traj_starts[it], ...].unsqueeze(1)
                     else:
                         self.mylogger(f'[RUN_MODEL] num_in_channels = 2 but no evs available. Exiting.')
                         exit()
-
-
-
-                ### DOMAIN RANDOMIZATION (WORK IN PROGRESS) ###
-
-                # try running vid2e in-the-loop to actively generate events with randomized parameters
-                elif mode == 'train' and self.domain_randomization == 1.0:
-
-                    # randomize parameters of esim
-                    self.esim.reset()
-                    self.esim.contrast_threshold_pos = np.random.uniform(0.05, 0.35)
-                    self.esim.contrast_threshold_neg = np.random.uniform(0.05, 0.35)
-                    self.esim.refractory_period = np.random.uniform(0.1, 1.0)*1e6
-
-                    # we need to recover the prepending image that we discarded above in order to generate new events
-                    evgen_im_ids = np.insert(batch_ids, 0, batch_ids[0]-1)
-                    log_images = torch.log(ims[evgen_im_ids, ...].float()+1e-3).to(self.device)
-                    timestamps = ((meta[evgen_im_ids, 1]-meta[evgen_im_ids, 1][0]).to(self.device) * 1e9).long()
-
-                    # run vid2e; this returns a dict {'t', 'x', 'y', 'p'}
-                    est_evs = self.esim.forward(log_images, timestamps)
-
-
-                    ### TODO
-                    # develop randomized batchification of events, but along discretizations of the depth image timestamps since we need to supervise with them
-                    # since we would normally have batch_size number of pairs to feed to the model along the batch dimension, let's create the same number of pairs but with randomized time windows (discretized)
-                    # we have batch_size number of discretization points
-
-                    # choose batch_size number of random starting timestamps indices
-                    start_ts_ids = torch.randint(0, batch_size, (batch_size,), dtype=torch.int)
-                    # choose batch_size number of random ending timestamps indices that are strictly greater than start_ts_ids
-                    end_ts_ids = torch.tensor([torch.randint(start_ts_ids[i] + 1, min(start_ts_ids[i] + 1 + 30, batch_size+1), (1,)) for i in range(len(start_ts_ids))], dtype=torch.int)
-                    
-                    # slice the events according to these timestamp indices to make batch_size number of evframes
-                    traj_input = []
-                    contrast_threshold_pos = self.esim.contrast_threshold_pos
-                    contrast_threshold_neg = self.esim.contrast_threshold_neg
-                    for evfr_i in range(batch_size):
-                        ev_idxs_pos = torch.bitwise_and(torch.bitwise_and((est_evs['t'] > timestamps[start_ts_ids[evfr_i]]), (est_evs['t'] <= timestamps[end_ts_ids[evfr_i]])), (est_evs['p'] > 0)).cpu()
-                        ev_idxs_neg = torch.bitwise_and(torch.bitwise_and((est_evs['t'] > timestamps[start_ts_ids[evfr_i]]), (est_evs['t'] <= timestamps[end_ts_ids[evfr_i]])), (est_evs['p'] < 0)).cpu()
-                        frame = self.esim.contrast_threshold_pos*np.histogram2d(est_evs['x'][ev_idxs_pos].cpu().numpy(), est_evs['y'][ev_idxs_pos].cpu().numpy(), bins=(log_images.shape[-1], log_images.shape[-2]), range=[[0, log_images.shape[-1]], [0, log_images.shape[-2]]])[0] - self.esim.contrast_threshold_neg*np.histogram2d(est_evs['x'][ev_idxs_neg].cpu().numpy(), est_evs['y'][ev_idxs_neg].cpu().numpy(), bins=(log_images.shape[-1], log_images.shape[-2]), range=[[0, log_images.shape[-1]], [0, log_images.shape[-2]]])[0]
-                        frame = frame.T
-
-
-
-
-                        hist_pos = torch.histc(torch.stack((est_evs['x'][ev_idxs_pos], est_evs['y'][ev_idxs_pos]), dim=1), bins=(log_images.shape[-1], log_images.shape[-2]), range=[[0, log_images.shape[-1]], [0, log_images.shape[-2]]])
-                        hist_neg = torch.histc(torch.stack((est_evs['x'][ev_idxs_neg], est_evs['y'][ev_idxs_neg]), dim=1), bins=(log_images.shape[-1], log_images.shape[-2]), range=[[0, log_images.shape[-1]], [0, log_images.shape[-2]]])
-
-                        # Perform the main operation
-                        frame = contrast_threshold_pos * hist_pos - contrast_threshold_neg * hist_neg
-                        frame = frame.T
-
-                ### END DOMAIN RANDOMIZATION ###
-
-
-
-
-                else:
-
-                    self.mylogger(f'[RUN_MODEL] Invalid domain_randomization value {self.domain_randomization}. Exiting.')
-                    exit()
 
             else:
                 self.mylogger(f'[RUN_MODEL] Invalid num_in_channels {self.num_in_channels}. Only num_in_channels of 1 (depth) or 2 (evs) is implemented. Exiting.')
@@ -1333,19 +1036,11 @@ class Learner:
             # batch (trajectory) query
             if not seq_input:
 
-                if self.model_type == 'ConvUNet_w_VelPred' or \
-                   self.model_type == 'OrigUNet' or \
-                   self.model_type == 'ConvUNet_w_ConvUNet_w_VelPred' or \
-                   self.model_type == 'OrigUNet_w_ConvUNet_w_VelPred':
+                if self.model_type == 'OrigUNet':
 
                     preds, extras = self.model([traj_input, traj_input_desvels, None])
                     preds = (preds, extras[0])
                 
-                elif self.model_type == 'ConvUNet':
-
-                    preds, extras = self.model([traj_input, None, None])
-                    preds = (torch.zeros_like(gt_norms[0]), preds)
-
                 elif self.model_type == 'ConvNet_w_VelPred':
 
                     preds, extras = self.model([traj_input, traj_input_desvels, None])
@@ -1359,26 +1054,18 @@ class Learner:
                     # if extras is None:
                     extras = [torch.zeros_like(preds[1])]
 
-                    if self.num_outputs == 1:
-                        preds[0][:, 2] = 0.0
+                    preds[0][:, 2] = 0.0
 
                 elif isinstance(self.model_type, list):
-
-                    if self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'VITFLY_ConvNet':
-
-                        preds, extras = self.model([traj_input, traj_input_desvels, [None, None], None])
-                        preds = (preds, extras[0])
-
-                        # for computing loss on combo models including VITFLY_* models, to compare with num outputs=1 models of mine
-                        if self.num_outputs == 1:
-                            preds[0][:, 2] = 0.0
 
                     if self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'VITFLY_ViTLSTM':
 
                         preds, extras = self.model([traj_input, traj_input_desvels, [None, None], None])
                         preds = (preds, extras[0])
 
-                    if self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'ConvNet_w_VelPred':
+                        preds[0][:, 2] = 0.0
+
+                    elif self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'ConvNet_w_VelPred':
 
                         preds, extras = self.model([traj_input, traj_input_desvels, [None, None], None])
                         preds = (preds, extras[0])
@@ -1387,7 +1074,7 @@ class Learner:
                 
                     preds, extras = self.model([traj_input, traj_input_desvels]) #, (init_hidden_state, init_cell_state)])
 
-            # if inputs are sequentially, individually queried
+            # if inputs are sequentially, individually queried (legacy)
             else:
                 preds = []
                 for single_input, single_vel in zip(traj_input, traj_input_desvels):
@@ -1486,9 +1173,10 @@ def argparsing(filename=None):
     parser.add_argument('--datadir', type=str, default=f'/home/{uname}/evfly_ws/src/evfly', help='path to relative dataset directory')
     
     ## experiment-level and learner params ##
+    # some are legacy and may be unused
     parser.add_argument('--ws_suffix', type=str, default='', help='suffix if any to workspace name')
-    parser.add_argument('--model_type', nargs='+', type=str, default='LSTMNet', help='list of strings matching model name in lstmArch.py')
-    parser.add_argument('--velpred', type=int, default=0, help='whether to add a velpred NN head to the model (0: none, 1: convnet+velpredfc to end, 2: convnet+velpredfc to middle)')
+    parser.add_argument('--model_type', nargs='+', type=str, default='LSTMNet', help='list of strings matching model names in learner_models.py')
+    parser.add_argument('--velpred', type=int, default=0, help='whether to add a velpred NN head to the model (0: none, 1: convnet+velpredfc to upsampled unet output, 11: convnet+velpredfc to unet output before upsampling, 2: convnet+velpredfc to unet middle layer output)')
     parser.add_argument('--dataset', nargs='+', type=str, default=None, help='name of dataset; is formatted as a list since we may want to select data from multiple datasets')
     parser.add_argument('--use_h5', action='store_true', help='whether to load dataset from a .h5 file')
     parser.add_argument('--short', type=int, default=0, help='if nonzero, how many trajectory folders to load')
@@ -1508,7 +1196,7 @@ def argparsing(filename=None):
     parser.add_argument('--num_recurrent', nargs='+', type=int, default=0, help='number of recurrent layers to use in an architecture, usually via LSTM; list to apply to different parts of an architecture')
     parser.add_argument('--events', type=str, default='', help='if non empty then train from this path to an events file; a file name including frames will load event frames')
     parser.add_argument('--keep_collisions', action='store_true', help='keep trajectories with collisions when dataloading')
-    parser.add_argument('--do_transform', action='store_true', help='transform images/depths/evs to auto-gimbal according to rotation state estimate (approximate)')
+    parser.add_argument('--do_transform', action='store_true', help='(legacy) transform images/depths/evs to auto-gimbal according to rotation state estimate (approximate)')
     parser.add_argument('--eval_tools_freq', type=int, default=0, help='frequency with which to generate evaluation plots')
     parser.add_argument('--eval_tools_on_best', action='store_true', help='whether to run eval_tools at best val loss epochs')
     parser.add_argument('--print_trainprogress_freq', type=int, default=1, help='frequency with which to print training progress statistics')
@@ -1517,11 +1205,11 @@ def argparsing(filename=None):
     parser.add_argument('--resize_input', nargs='+', type=int, default=None, help='2-length list of ints specifying [H, W] to downsample images, depths, and event frames to')
     parser.add_argument('--loss_weights', nargs='+', type=float, default=None, help='list of weights for loss terms, must be same length as number of loss terms')
     parser.add_argument('--split_method', type=str, default='train-val', help='whether split should be done in train-val or val-train order, post-shuffle. due to legacy code in which split was val-train.')
-    parser.add_argument('--num_outputs', type=int, default=2, help='number of outputs for a model; typical use-case is the length of desired velocity vector for prediction, where ConvUNet_w_VelPred model may output 2-vector and calculate third component to complete a unit norm vector')
+    parser.add_argument('--num_outputs', type=int, default=2, help='(legacy) number of outputs for a model; typical use-case is the length of desired velocity vector for prediction, where ConvUNet_w_VelPred model may output 2-vector and calculate third component to complete a unit norm vector')
     parser.add_argument('--rescale_depth', type=float, default=0.0, help='rescale depth values by this factor to be in range [0, 1] (default 0.0 does not rescale)')
     parser.add_argument('--rescale_evs', type=float, default=0.0, help='rescale evs values by this factor to be in range [-1, 1] (default 0.0 does not rescale; -1.0 rescales by maximum vlaue per frame)')
-    parser.add_argument('--domain_randomization', type=float, default=0.0, help='whether to randomize event generation process, and by what parameter (default: 0 no randomization, 1 randomize by some standard amount)')
-    parser.add_argument('--bev', type=int, default=0, help='whether to use a binary event image (0: No, 1: abs(evframe), 2: bev (actual BEV))')
+    parser.add_argument('--domain_randomization', type=float, default=0.0, help='(legacy)')
+    parser.add_argument('--bev', type=int, default=0, help='whether to use a binary event image (0: No, 1: abs(evframe), 2: bev (actual BEV)). referred to as BEM in the paper.')
     parser.add_argument('--skip_type', type=str, default='crop', help='what kind of processing should be made over skip connections (default: crop, other options: interp). Only relevant for OrigUNet type models.')
     parser.add_argument('--combine_checkpoints', action='store_true', help='whether to combine torch state dicts from the inputted checkpoints into a single model')
     parser.add_argument('--data_augmentation', type=float, default=0.0, help='whether to use data augmentation methods in dataloader (0.0: no augmentation, 1.0: augmentation, other values to be implemented)')

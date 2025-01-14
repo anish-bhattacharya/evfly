@@ -16,26 +16,14 @@ then
   echo "[LAUNCH SCRIPT] Vision based!"
   echo
   run_competition_args="--vision_based"
-  realtimefactor="real_time_factor:=0.5"
+  realtimefactor="real_time_factor:=1.0"
 elif [ "$2" = "state" ]
 then
   echo
   echo "[LAUNCH SCRIPT] State based!"
   echo
-  if [ "$3" = "human" ]
-  then
-    run_competition_args="--keyboard"
-    realtimefactor=""
-  else
-    if [ "$3" = "planner" ]
-    then
-      run_competition_args="--planner"
-      realtimefactor="real_time_factor:=1.0"
-    else
-      run_competition_args=""
-      realtimefactor="real_time_factor:=1.0"
-    fi
-  fi
+  run_competition_args=""
+  realtimefactor="real_time_factor:=1.0"
 else
   echo
   echo "[LAUNCH SCRIPT] Unknown or empty second argument: $2, only 'vision' or 'state' allowed!"

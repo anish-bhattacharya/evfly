@@ -335,6 +335,7 @@ class VelPredictor(nn.Module):
 
         return x, None
 
+# this is a UNet model meant to imitate the original published UNet model (Ronneberger 2015)
 class OrigUNet(nn.Module):
     def __init__(self, num_in_channels=2, num_out_channels=1, num_recurrent=0, enc_params=None, dec_params=None, input_shape=[1, 2, 260, 346], device=None, logger=None, velpred=0, fc_params=None, form_BEV=0, is_deployment=False, is_large=False, evs_min_cutoff=1e-3, skip_type='crop'):
         super().__init__()
@@ -633,3 +634,25 @@ class OrigUNet_w_VITFLY_ViTLSTM(nn.Module):
         x_depth_input = torch.clip(x_depth * 2, 0.0, 1.0) # * 2 scaling is needed to roughly match the depth scales that VITFLY_ViTLSTM was trained on
         x_vel, h_vitlstm = self.vitfly_vitlstm([x_depth_input, X[1], None, X[3]])
         return x_vel, (x_depth, y_upconv, ((h_unet, h_velpred), h_vitlstm))
+
+class OrigUNet_w_ConvNet_w_VelPred(nn.Module):
+    def __init__(self, num_in_channels=2, num_out_channels=1, num_recurrent=[0, 0], enc_params=None, dec_params=None, input_shape=[1, 2, 260, 346], device=None, logger=None, old_model=False, velpred=False, fc_params=None, form_BEV=0, is_deployment=False, evs_min_cutoff=1e-3, skip_type='crop', num_outputs=1):
+        super().__init__()
+        # evs -> depth
+        self.origunet = OrigUNet(num_in_channels=num_in_channels, num_out_channels=num_out_channels, num_recurrent=num_recurrent, enc_params=enc_params, dec_params=dec_params, input_shape=input_shape, device=device, logger=logger, velpred=velpred, fc_params=fc_params, form_BEV=form_BEV, is_deployment=is_deployment, evs_min_cutoff=evs_min_cutoff, skip_type=skip_type)
+        # depth -> vel
+        self.convnet_w_velpred = ConvNet_w_VelPred(
+                                    num_in_channels=1, 
+                                    num_recurrent=num_recurrent[1], 
+                                    num_outputs=num_outputs,
+                                    enc_params=enc_params,
+                                    fc_params=fc_params,
+                                    input_shape=[1, 1, 68, 148])
+
+    def forward(self, X):
+
+        x = X[0]
+        _, (x_depth, y_upconv, (h_unet, h_velpred)) = self.origunet([x, None, X[2]])
+        x_vel, (h_convnet_w_velpred) = self.convnet_w_velpred([y_upconv, None, X[3]])
+
+        return x_vel, (x_depth, y_upconv, ((h_unet, None), h_convnet_w_velpred))

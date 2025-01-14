@@ -28,13 +28,11 @@ uname = getpass.getuser()
 AF_PATH = f'/home/{uname}/evfly_ws/src/evfly'
 SMALL_EPS = 1e-5
 
-from dataModify import Gimbal
 sys.path.append(AF_PATH+'/learner')
 from learner import argparsing
 from learner_models import *
+sys.path.append(AF_PATH+'/utils')
 from ev_utils import *
-from path_planning import Planner
-
 
 class AgilePilotNode:
     def __init__(self, vision_based=False, ppo_path=None, model_type=None, model_path=None, num_recurrent=None, keyboard=False, use_planner=False, exp_name=None, total_num_exps=1):
@@ -55,7 +53,7 @@ class AgilePilotNode:
         ### USER PARAMETERS ###
         #######################
 
-
+        # used for repeated trials with steadily increasing desired velocity
         # if self.exp_name is not None and self.exp_name != '':
         #     try:
         #         print('[RUN_COMPETITION] Extracting desired velocity from exp_name...')
@@ -74,7 +72,7 @@ class AgilePilotNode:
 
         # if in state mode, set these to false to save on computation
         self.do_events = True and self.vision_based
-        self.use_gimbal = False and self.vision_based
+        self.use_gimbal = False and self.vision_based # legacy
         
         self.save_events = False
         self.saved_events = False
@@ -83,6 +81,10 @@ class AgilePilotNode:
         self.plot_cmd = False
 
         #######################
+
+        ########################################
+        ## Set up NN and other configurations ##
+        ########################################
 
         # read arguments from learner/configs/lstm.txt
         self.args = argparsing(filename=AF_PATH+'/learner/configs/lstm.txt')
@@ -120,7 +122,7 @@ class AgilePilotNode:
 
         self.num_recurrent = self.args.num_recurrent
 
-        # load yaml of paramteres
+        # load yaml of parameters
         with open('../../envsim/parameters/simple_sim_pilot.yaml') as file:
             pilot_params = yaml.load(file, Loader=yaml.FullLoader)
         self.takeoff_height = pilot_params['takeoff_height']
@@ -148,6 +150,7 @@ class AgilePilotNode:
         
         quad_name = "kingfisher"
 
+        # logging
         self.init = 0
         self.col = None
         self.t1 = 0 #Time flag
@@ -183,8 +186,7 @@ class AgilePilotNode:
         self.data_collection_xrange = [0+5, self.goal_distance-.17*self.goal_distance]
 
         # make the folder for the epoch
-        # self.folder = f"/home/anish/evfly_ws/src/evfly/utils/rollouts/{int(time.time()*1000)}"
-        self.folder = f"/home/anish/evfly_ws/src/evfly/utils/rollouts/{int(time.time()*1000) if (self.exp_name is None or self.exp_name == '') else self.exp_name}"
+        self.folder = AF_PATH+f"/utils/rollouts/{int(time.time()*1000) if (self.exp_name is None or self.exp_name == '') else self.exp_name}"
         os.mkdir(self.folder)
 
         # if this is a named experiment, save the config file to maintain information of run, including scene/env/etc
@@ -206,45 +208,19 @@ class AgilePilotNode:
         self.spline_vels = []
         self.plotted_commands = False
 
-        # load trained model here (copied over from user_code.py)
+        # load trained model
         if self.args.checkpoint_path is not None and self.vision_based:
             print(f"[RUN_COMPETITION] Model loading from {self.args.checkpoint_path} ...")
             self.device = torch.device("cpu")
 
-            if self.args.model_type == 'LSTMNet':
-
-                self.model = LSTMNet().to(self.device).float()
-
-            elif self.args.model_type == 'LSTMNetnoFC':
-
-                self.model = LSTMNetnoFC().to(self.device).float()
-
-            elif self.args.model_type == 'LSTMNetwFC':
-
-                self.model = LSTMNetwFC(num_layers=self.num_recurrent).to(self.device).float()
-
-            elif self.args.model_type == 'ConvNet':
-
-                self.model = ConvNet().to(self.device).float()
-
-            elif self.args.model_type == 'ConvUNet_w_VelPred':
-
-                self.model = ConvUNet_w_VelPred(num_in_channels=self.args.num_in_channels, 
-                                                num_out_channels=self.args.num_out_channels, 
-                                                num_recurrent=self.args.num_recurrent, 
-                                                num_outputs=self.args.num_outputs, 
-                                                enc_params=self.enc_params, 
-                                                dec_params=self.dec_params, 
-                                                input_shape=[1, 1, self.args.resize_input[0], self.args.resize_input[1]]).to(self.device).float()
-                
-            elif self.args.model_type == 'ConvNet_w_VelPred' or (isinstance(self.args.model_type, list) and len(self.args.model_type) == 1 and self.args.model_type[0] == 'ConvNet_w_VelPred'):
+            if self.args.model_type == 'ConvNet_w_VelPred' or (isinstance(self.args.model_type, list) and len(self.args.model_type) == 1 and self.args.model_type[0] == 'ConvNet_w_VelPred'):
 
                 self.model = ConvNet_w_VelPred(num_in_channels=self.args.num_in_channels, 
                                                num_recurrent=self.args.num_recurrent[1], num_outputs=self.args.num_outputs,
                                                enc_params=self.enc_params,
                                                fc_params=self.fc_params,
                                                input_shape=[1, 1, 68, 148]).to(self.device).float()
-                # TODO TODO NOTE NOTE hardcoded resize input here for velpred11 part of model
+                # NOTE hardcoded resize input here for velpred11 part of model
 
             elif self.args.model_type == 'OrigUNet' or (isinstance(self.args.model_type, list) and len(self.args.model_type) == 1 and self.args.model_type[0] == 'OrigUNet'):
 
@@ -259,24 +235,9 @@ class AgilePilotNode:
                                       evs_min_cutoff=0.0,
                                       skip_type=self.args.skip_type).to(self.device).float()
                 
-            elif self.args.model_type == 'OrigUNet_w_ConvUNet_w_VelPred':
+            elif self.args.model_type == 'OrigUNet_w_VITFLY_VitLSTM' or isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'VITFLY_ViTLSTM':
 
-                self.model = OrigUNet_w_ConvUNet_w_VelPred(
-                                num_in_channels=self.args.num_in_channels, 
-                                num_out_channels=self.args.num_out_channels, 
-                                num_recurrent=self.args.num_recurrent, 
-                                input_shape=[1, 1, self.args.resize_input[0], self.args.resize_input[1]], 
-                                old_model=False, 
-                                velpred=self.args.velpred, 
-                                enc_params=self.enc_params, 
-                                dec_params=self.dec_params, 
-                                fc_params=self.fc_params, 
-                                num_outputs=self.args.num_outputs
-                            ).to(self.device).float()
-                
-            elif self.args.model_type == 'OrigUNet_w_ND_VitLSTM' or isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ND_ViTLSTM':
-
-                self.model = OrigUNet_w_ND_ViTLSTM(
+                self.model = OrigUNet_w_VITFLY_ViTLSTM(
                                 num_in_channels=self.args.num_in_channels,
                                 num_out_channels=self.args.num_out_channels,
                                 num_recurrent=self.args.num_recurrent,
@@ -317,11 +278,7 @@ class AgilePilotNode:
             print(f'[SETUP] Number of parameters: {sum(p.numel() for p in self.model.parameters()):,}')
             print(f'[SETUP] Number of trainable parameters: {sum(p.numel() for p in self.model.parameters() if p.requires_grad):,}')
 
-            # Give full path if possible since the bash script runs from outside the folder
             if len(self.args.checkpoint_path) > 1:
-                # if self.args.model_type == 'OrigUNet_w_ConvUNet_w_VelPred':
-                #     self.model.origunet.load_state_dict(torch.load(self.args.checkpoint_path[0], map_location=self.device))
-                #     self.model.convunet_w_velpred.load_state_dict(torch.load(self.args.checkpoint_path[1], map_location=self.device))
                 
                 if self.args.combine_checkpoints:
 
@@ -335,22 +292,7 @@ class AgilePilotNode:
                         self.model.origunet.load_state_dict(torch.load(self.args.checkpoint_path[0], map_location=self.device))
                         self.model.convunet_w_velpred.load_state_dict(torch.load(self.args.checkpoint_path[1], map_location=self.device))
 
-                    elif isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ND_ConvNet':
-
-                        self.model.origunet.load_state_dict(torch.load(self.args.checkpoint_path[0], map_location=self.device))
-                        self.model.nd_convnet.load_state_dict(torch.load(self.args.checkpoint_path[1], map_location=self.device))
-
-                    elif isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ND_ViT':
-
-                        self.model.origunet.load_state_dict(torch.load(self.args.checkpoint_path[0], map_location=self.device))
-                        self.model.nd_vit.load_state_dict(torch.load(self.args.checkpoint_path[1], map_location=self.device))
-
-                    elif isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ND_UNet':
-
-                        self.model.origunet.load_state_dict(torch.load(self.args.checkpoint_path[0], map_location=self.device))
-                        self.model.nd_unet.load_state_dict(torch.load(self.args.checkpoint_path[1], map_location=self.device))
-
-                    elif isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ND_ViTLSTM':
+                    elif isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'VITFLY_ViTLSTM':
 
                         self.model.origunet.load_state_dict(torch.load(self.args.checkpoint_path[0], map_location=self.device), strict=False)
                         self.model.nd_vitlstm.load_state_dict(torch.load(self.args.checkpoint_path[1], map_location=self.device))
@@ -413,77 +355,9 @@ class AgilePilotNode:
         # manual synchronization variables
         self.accepted_delta_t_im_depth = 0.01
 
-        ########################
-        ## Path planner setup ##
-        ########################
-
-        self.use_planner = use_planner
-
-        self.csv_file = '/home/anish/evfly_ws/src/evfly/flightmare/flightpy/configs/vision/'+config_params['environment']['level']+'/'+config_params['environment']['env_folder']+'/static_obstacles.csv'
-        self.is_trees = 'trees' in config_params['environment']['level']
+        self.csv_file = AF_PATH+'/flightmare/flightpy/configs/vision/'+config_params['environment']['level']+'/'+config_params['environment']['env_folder']+'/static_obstacles.csv'
+        self.is_trees = 'trees' in config_params['environment']['level'] or 'forest' in config_params['environment']['level']
         self.quad_radius = config_params['quad_radius']
-
-        self.planner = Planner(discretization=1.0, obst_inflation_factor=0.3)
-        self.planner_started = False
-        self.planner_start_time = 0.0
-        start = np.array([0, 0, self.takeoff_height])
-        end = np.array([self.goal_distance, 0, self.takeoff_height])
-
-        if self.use_planner:
-
-            print(f'\n[RUN_COMPETITION] Planner initialized, start = {start}, end = {end}\n')
-            self.planner.input_obstacles_from_csv(self.csv_file)
-            print(f'[RUN_COMPETITION] Planner map filled with obstacles from csv_file = {self.csv_file}\n')
-            self.planner.calculate_path_and_spline(start, end, velocity=self.desiredVel)
-
-            sys.path.append(opj(os.path.dirname(os.path.abspath(__file__)), '../../../rotorpy/rotorpy/controllers'))
-            from quadrotor_control import SE3Control
-
-            print(f'[RUN_COMPETITION] Using controller to track planner path\n')
-
-            # controller
-            quad_params = {}
-            quad_params['mass'] = 0.750 # kg
-            quad_params['Ixx'] = 0.0025  # kg*m^2
-            quad_params['Iyy'] = 0.0021  # kg*m^2
-            quad_params['Izz'] = 0.0043  # kg*m^2
-            quad_params['Ixy'] = 0.0  # kg*m^2
-            quad_params['Ixz'] = 0.0  # kg*m^2
-            quad_params['Iyz'] = 0.0  # kg*m^2
-
-            # Frame parameters
-            quad_params['c_Dx'] = 0.0  # drag coeff, N/(m/s)**2
-            quad_params['c_Dy'] = 0.0  # drag coeff, N/(m/s)**2
-            quad_params['c_Dz'] = 0.0  # drag coeff, N/(m/s)**2
-
-            quad_params['num_rotors'] = 4
-            d = 0.35
-            rotor_pos = {}
-            rotor_pos['r1'] = d*np.array([ 0.70710678118, 0.70710678118, 0])
-            rotor_pos['r2'] = d*np.array([ 0.70710678118,-0.70710678118, 0]),
-            rotor_pos['r3'] = d*np.array([-0.70710678118,-0.70710678118, 0]),
-            rotor_pos['r4'] = d*np.array([-0.70710678118, 0.70710678118, 0])
-            quad_params['rotor_pos'] = rotor_pos
-
-            quad_params['rotor_directions'] = np.array([1,-1,1,-1])
-
-            # Rotor parameters    
-            quad_params['rotor_speed_min'] = 150.0 # rad/s
-            quad_params['rotor_speed_max'] = 2800.0 # rad/s
-
-            quad_params['k_eta'] = 5.57e-6     # thrust coeff, N/(rad/s)**2
-            quad_params['k_m'] = 1.36e-07       # yaw moment coeff, Nm/(rad/s)**2
-            # quad_params['k_d']       # rotor drag coeff, N/(m/s)
-            # quad_params['k_z']       # induced inflow coeff N/(m/s)
-            # quad_params['k_flap']    # Flapping moment coefficient Nm/(m/s)
-
-            # Motor parameters
-            quad_params['tau_m'] = 0.005     # motor reponse time, seconds
-            self.controller = SE3Control(quad_params)
-
-        else:
-            
-            self.planner.splines = None
 
         #####################
         ## ROS subscribers ##
@@ -536,6 +410,10 @@ class AgilePilotNode:
             queue_size=1,
             tcp_nodelay=True,
         )
+
+        ####################
+        ## ROS publishers ##
+        ####################
 
         # Command publishers
         self.cmd_pub = rospy.Publisher(
@@ -591,7 +469,6 @@ class AgilePilotNode:
         command_mode = 2
         command = AgileCommand(command_mode)
         command.t = self.state.t
-        # command.velocity = [1.0, 0.0, 0.0]
         command.yawrate = 0.0
         command.mode = 2
         
@@ -604,12 +481,8 @@ class AgilePilotNode:
             im = self.events
         else:
             im = self.depth_gimbal if self.use_gimbal else self.depth
-            # im = self.depth_gimbal
 
         im = torch.Tensor(im)
-
-        # print some stats of the im
-        # print(f'im min = {im.min()}\tim max = {im.max()}')
 
         # if im is not of size resize_input (see default config file configs/lstm.txt), resize
         if im.shape[0] != self.args.resize_input[0] or im.shape[1] != self.args.resize_input[1]:
@@ -631,21 +504,11 @@ class AgilePilotNode:
 
                 print(f'[RUN_COMPETITION] Resetting hidden state for model_type OrigUNet')
 
-                # # [(h0, c0), (h1, c1), ...]
-                # self.model_hidden_state_origunet = [(torch.zeros(self.model.middle_shape), torch.zeros(self.model.middle_shape))] * self.num_recurrent[0]
-
-                # if self.args.velpred > 0 and self.num_recurrent[1] > 0:
-                #     self.model_hidden_state_velpred = (torch.zeros(self.model.lstm_velpred.num_layers, self.model.lstm_velpred.hidden_size).float(), torch.zeros(self.model.lstm_velpred.num_layers, self.model.lstm_velpred.hidden_size).float())
-                # else:
-                #     self.model_hidden_state_velpred = None
-
-                # self.model_hidden_state = (self.model_hidden_state_origunet, self.model_hidden_state_velpred)
-
                 self.model_hidden_state = [[None, None]]
 
-            elif isinstance(self.args.model_type, list) and len(self.args.model_type) > 1 and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ND_ViTLSTM':
+            elif isinstance(self.args.model_type, list) and len(self.args.model_type) > 1 and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'VITFLY_ViTLSTM':
 
-                print(f'[RUN_COMPETITION] Resetting hidden state for model_type OrigUNet, ND_ViTLSTM')
+                print(f'[RUN_COMPETITION] Resetting hidden state for model_type OrigUNet, VITFLY_ViTLSTM')
                 self.model_hidden_state = ((None, None), None) # for origunet+X, this is ((origunet_unet_hidden, origunet_velpred_hidden), X_hidden)
 
             elif isinstance(self.args.model_type, list) and len(self.args.model_type) > 1 and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ConvNet_w_VelPred':
@@ -677,17 +540,9 @@ class AgilePilotNode:
                 ])
                 # hidden state that for combo origunet+X model should be an unraveled iterable of ((origunet_unet_hidden, origunet_velpred_hidden), X_hidden)
 
-        # print('===============================================================')
-        # print(out)
-        # print('===============================================================')
-
         x, self.extras = out
 
-        # print('===============================================================')
-        # print(self.extras[2:])
-        # print('===============================================================')
-
-        if isinstance(self.args.model_type, list) and len(self.args.model_type) > 1 and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ND_ViTLSTM':
+        if isinstance(self.args.model_type, list) and len(self.args.model_type) > 1 and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'VITFLY_ViTLSTM':
 
             self.model_hidden_state = self.extras[2]
 
@@ -703,12 +558,6 @@ class AgilePilotNode:
         
             self.model_hidden_state = self.extras
 
-            # print('=====')
-
-            # print(len(self.model_hidden_state))
-            # print(self.model_hidden_state[0][0].shape)
-            # print(self.model_hidden_state[0][1].shape)
-
         elif 'LSTM' in self.model.__class__.__name__:
         
             self.model_hidden_state = self.extras
@@ -723,19 +572,13 @@ class AgilePilotNode:
         x = x.squeeze().detach().numpy()
 
         command.velocity = x * self.desiredVel
+        # possibly necessary scalers if using a pretrained V(phi) from another environment
         # command.velocity[1] *= 2.0
-        # command.velocity[2] *= 10.0
-
-        # # TODO debugging
-        # command.velocity [0] -= max(np.abs(command.velocity[1:]))
 
         # manual drone acceleration phase
         min_xvel_cmd = 1.0
         hardcoded_ctl_threshold = 2.0
         if self.state.pos[0] < hardcoded_ctl_threshold:
-            # # if the hundredths place of the time is even, then print this
-            # if int(self.state.t) * 100 % 2 == 0:
-            #     print(f'[RUN_COMPETITION VISION_BASED] manual drone acceleration phase while x < {hardcoded_ctl_threshold}, self.state.pos[0] = {self.state.pos[0]}')
             command.velocity[0] = max(min_xvel_cmd, (self.state.pos[0]/hardcoded_ctl_threshold)*self.desiredVel)
 
         return command
@@ -747,6 +590,7 @@ class AgilePilotNode:
         self.got_keypress = rospy.Time().now().to_sec()
         self.keyboard_input = msg.data
 
+    # legacy
     def readVel(self,file):
         with open(file,"r") as f:
             x = f.readlines()
@@ -778,8 +622,6 @@ class AgilePilotNode:
 
         # thresholding
         self.events = np.zeros_like(difflog)
-        # evim[difflog < -neg_thresh] = -1.0
-        # evim[difflog > pos_thresh] = 1.0
 
         if np.abs(difflog).max() < max(pos_thresh, neg_thresh):
             return
@@ -819,55 +661,12 @@ class AgilePilotNode:
 
         ###################
 
-        # run expert regardless of method
+        # legacy
         # usable keypress?
         if rospy.Time().now().to_sec() - self.got_keypress > 0.1:
             self.keyboard_input = ''
         
-        ######################
-        ### PLANNER EXPERT ###
-        ######################
-
-        # if using our own controller for CTBR or SRT, bypass state_based command function and call the controller directly
-        if self.use_planner:
-
-            # if (self.state.pos[0] < self.planner.splines[0](0.0) + 0.2) and \
-            if self.state.pos[2] < self.planner.splines[2](0.0) - 0.2 and \
-                not self.planner_started:
-                self.planner_start_time = self.state.t
-            else:
-                self.planner_started = True
-
-        # if self.use_planner:
-
-            if self.planner_started:
-                curr_time = self.state.t - self.planner_start_time
-            else:
-                curr_time = 0.0
-
-            input_state = {}
-            input_state['x'] = np.array([self.state.pos[0], self.state.pos[1], self.state.pos[2]])
-            input_state['v'] = np.array([self.state.vel[0], self.state.vel[1], self.state.vel[2]])
-            input_state['q'] = np.array([self.state.att[1], self.state.att[2], self.state.att[3], self.state.att[0]])
-            input_state['w'] = np.array([self.state.omega[0], self.state.omega[1], self.state.omega[2]])
-
-            input_flat_output = {}
-            input_flat_output['x'] = np.array([self.planner.splines[0](curr_time), self.planner.splines[1](curr_time), self.planner.splines[2](curr_time)])
-            input_flat_output['x_dot'] = np.array([self.planner.splines[0](curr_time, 1), self.planner.splines[1](curr_time, 1), self.planner.splines[2](curr_time, 1)])
-            input_flat_output['x_ddot'] = np.array([self.planner.splines[0](curr_time, 2), self.planner.splines[1](curr_time, 2), self.planner.splines[2](curr_time, 2)])
-            input_flat_output['yaw'] = 0.0
-            input_flat_output['yaw_dot'] = 0.0
-
-            control_input = self.controller.update(curr_time, input_state, input_flat_output)
-            cmd_ct = control_input['cmd_thrust']
-            cmd_br = control_input['cmd_w']
-            cmd_srt = control_input['cmd_motor_thrusts']
-            cmd_v = control_input['cmd_v']
-
-            # print(f'[RUN_COMPETITION] cmd_ct = {cmd_ct}, cmd_br = {cmd_br}, cmd_srt = {cmd_srt}, cmd_v = {cmd_v}')
-
-        ######################
-
+        # run expert regardless of method
         if not self.vision_based or (self.vision_based and self.run_expert_in_parallel):
         
             self.expert_command, extras = compute_command_state_based(
@@ -876,9 +675,6 @@ class AgilePilotNode:
                 desiredVel=self.desiredVel,
                 rl_policy=self.rl_policy,
                 keyboard=self.keyboard,
-                keyboard_input=self.keyboard_input,
-                splines=self.planner.splines,
-                planner_start_time=self.planner_start_time,
                 is_trees=self.is_trees
             )
             collisions = extras['collisions']
@@ -902,10 +698,6 @@ class AgilePilotNode:
             self.im_dbg2 = cv2.cvtColor((self.im_dbg2*255).astype(np.uint8), cv2.COLOR_GRAY2RGB)
             # self.im_dbg2 = np.stack((self.im_dbg2,)*3, axis=-1)
 
-        # for pt in self.pts:
-        #     pt_in = (np.int32(pt[1]), np.int32(pt[0])) #tuple(np.int32(pt))
-        #     cv2.circle(self.im_dbg2, pt_in, 10, (255, 255, 255), -1)
-
         # if in vision command mode, compute vision command and publish
         vision_command = None
         if self.vision_based:
@@ -920,11 +712,13 @@ class AgilePilotNode:
 
                 print(f'[RUN_COMPETITION] depth min = {self.extras[0].min():.2f}, depth max = {self.extras[0].max():.2f}, depth 0.97 quantile = {torch.quantile(torch.abs(self.extras[0]), 0.97):.2f}')
 
-            # if ConvUNet_w_VelPred, visualize the first element of extras which is fully interpolated up-to-size depth prediction from evframe
-            if self.model.__class__.__name__ == 'ConvUNet_w_VelPred' or self.model.__class__.__name__ == 'OrigUNet' or \
-                (isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ND_ViTLSTM') or \
-                (isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ConvNet_w_VelPred'):
+            # if UNet type model, visualize the first element of extras which is fully interpolated up-to-size depth prediction from evframe
+            if self.model.__class__.__name__ == 'OrigUNet' or \
+               (isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'VITFLY_ViTLSTM') or \
+               (isinstance(self.args.model_type, list) and self.args.model_type[0] == 'OrigUNet' and self.args.model_type[1] == 'ConvNet_w_VelPred'):
+                
                 self.im_dbg2 = (np.stack((self.extras[0].squeeze().detach().numpy(),)*3, axis=-1) * 255).astype(np.uint8)
+            
             self.im_dbg2_pub.publish(self.cv_bridge.cv2_to_imgmsg(self.im_dbg2, encoding="passthrough"))
 
             self.command = vision_command
@@ -932,37 +726,8 @@ class AgilePilotNode:
         # if in state mode, compute state command and publish
         else:
 
-            # planner-based expert
-            if self.use_planner:
-
-                # if using planner, use controller output command
-                # # SRT
-                # self.command = AgileCommand(0)
-                # self.command.t = self.state.t
-                # self.command.rotor_thrusts = [cmd_srt[0], cmd_srt[1], cmd_srt[2], cmd_srt[3]]
-
-                # CTBR
-                self.command = AgileCommand(1)
-                self.command.t = self.state.t
-                self.command.collective_thrust = cmd_ct
-                self.command.bodyrates = [cmd_br[0], cmd_br[1], cmd_br[2]]
-
-                # # LINVEL
-                # self.command = AgileCommand(2)
-                # self.command.t = self.state.t
-                # self.command.velocity = [cmd_v[0], cmd_v[1], cmd_v[2]]
-                # self.command.yawrate = 0.0
-
-                # # manual drone acceleration phase
-                # min_xvel_cmd = 1.0
-                # hardcoded_ctl_threshold = 2.0
-                # if self.state.pos[0] < hardcoded_ctl_threshold:
-                #     self.command.velocity[0] = max(min_xvel_cmd, (self.state.pos[0]/hardcoded_ctl_threshold)*self.desiredVel)
-
-            # regular user_code expert
-            else:
-
-                self.command = self.expert_command
+            # user_code expert
+            self.command = self.expert_command
 
             # debug image 2 will overlay the collision array of points as white dots,
             # where if collision[i, j] == 1 it is red,
@@ -987,10 +752,6 @@ class AgilePilotNode:
                 if wpt_idx is not None:
                     pt_in_chosen = (int((wpt_idx[1]+1)*x_px_offset), int((wpt_idx[0]+1)*y_px_offset))
                     cv2.circle(self.im_dbg2, pt_in_chosen, 6, (0, 255, 0), -1)
-
-            # if wpt_idx is not None:
-            #     pt_in = (np.int32(self.pts[wpt_idx][1]), np.int32(self.pts[wpt_idx][0]))
-            #     cv2.circle(self.im_dbg2, pt_in, 10, (0, 255, 0), -1)
 
         self.publish_command(self.command)
 
@@ -1199,11 +960,12 @@ class AgilePilotNode:
 
     def im_callback(self, im_msg):
 
+        # legacy
         # if self.image_w is None or self.image_h is None:
             # take these values from the config file instead
             # self.image_w = im_msg.width
             # self.image_h = im_msg.height
-        if self.gimbal is None:
+        if self.gimbal is None and self.use_gimbal:
             self.gimbal = Gimbal(self.gimbal_fov, self.image_w, self.image_h)
 
         try:
@@ -1215,10 +977,6 @@ class AgilePilotNode:
         self.im_ctr += 1
         self.im_t = im_msg.header.stamp.to_nsec() / 1e9 # float with 9 digits past decimal
 
-        # # print some image stats
-        # print(f'[RUN_COMPETITION] im_callback: im min {im.min()}, im max {im.max()} im shape {im.shape}, im type {im.dtype}')
-        # print()
-
         # for rgb images, convert to normalized single channel,
         # preferably in the same way as Vid2E
         if len(im.shape) == 3 or im.shape[2] == 3:
@@ -1229,10 +987,11 @@ class AgilePilotNode:
         self.prev_im = self.im
         self.im = im
 
-        # compute gimbaled images and save
-        self.prev_im_gimbal = self.im_gimbal
-        q = np.array([self.state.att[0], self.state.att[1], self.state.att[2], self.state.att[3]])
-        self.im_gimbal, self.pts = self.gimbal.do_gimbal(self.im, q, self.gimbal_w, self.gimbal_h, do_clip=True)
+        # legacy
+        # # compute gimbaled images and save
+        # self.prev_im_gimbal = self.im_gimbal
+        # q = np.array([self.state.att[0], self.state.att[1], self.state.att[2], self.state.att[3]])
+        # self.im_gimbal, self.pts = self.gimbal.do_gimbal(self.im, q, self.gimbal_w, self.gimbal_h, do_clip=True)
 
         if self.do_events:
             # compute event batch
@@ -1245,7 +1004,7 @@ class AgilePilotNode:
         if self.image_w is None or self.image_h is None:
             self.image_w = depth_msg.width
             self.image_h = depth_msg.height
-            if self.gimbal is None:
+            if self.gimbal is None and self.use_gimbal:
                 self.gimbal = Gimbal(self.gimbal_fov, self.image_w, self.image_h)
 
         try:
@@ -1254,25 +1013,15 @@ class AgilePilotNode:
             rospy.logerr("[DEPTH_CALLBACK] CvBridge Error: {0}".format(e))
             return -1
         
-        # # save sample depth image as npy
-        # if self.im_ctr == 1:
-        #     np.save('/home/anish/depth.npy', im)
-
         self.depth_t = depth_msg.header.stamp.to_nsec()/1e9
-        # print max and nonzero min of depth image
-        # print(f'[DEPTH_CALLBACK] depth image has max {im.max()} and nonzero min {im[np.nonzero(im)].min()}')
         im = np.clip(im / self.depth_im_threshold, 0, 1)
-
-        # if im.min() <= 0.0:
-        #     # print number of bad pixels equal to 0 and less than 0
-        #     print(f'[DEPTH_CALLBACK] depth image has {np.sum(im == 0.0)} pixels equal to 0 and {np.sum(im < 0.0)} pixels less than 0')
-        #     print(f'[DEPTH_CALLBACK] depth image has bad value {im.min()}')
 
         self.depth = self.fix_corrupted_depth(im)
         
-        # compute gimbaled images and save
-        q = np.array([self.state.att[0], self.state.att[1], self.state.att[2], self.state.att[3]])
-        self.depth_gimbal, self.pts = self.gimbal.do_gimbal(self.depth, q, self.gimbal_w, self.gimbal_h, do_clip=True)
+        # legacy
+        # # compute gimbaled images and save
+        # q = np.array([self.state.att[0], self.state.att[1], self.state.att[2], self.state.att[3]])
+        # self.depth_gimbal, self.pts = self.gimbal.do_gimbal(self.depth, q, self.gimbal_w, self.gimbal_h, do_clip=True)
 
         return 0
 
@@ -1376,6 +1125,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print(f'[RUN_COMPETITION] args: {args}')
 
-    agile_pilot_node = AgilePilotNode(vision_based=args.vision_based, ppo_path=args.ppo_path, model_type=args.model_type, model_path=args.model_path, num_recurrent=args.num_recurrent, keyboard=args.keyboard, use_planner=args.planner, exp_name=args.exp_name, total_num_exps=args.total_num_exps)
+    agile_pilot_node = AgilePilotNode(vision_based=args.vision_based, ppo_path=args.ppo_path, model_type=args.model_type, model_path=args.model_path, num_recurrent=args.num_recurrent, keyboard=args.keyboard, use_planner=False, exp_name=args.exp_name, total_num_exps=args.total_num_exps)
 
     rospy.spin()
