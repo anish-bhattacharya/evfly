@@ -87,10 +87,10 @@ tar -xvf <path/to/custom_sim_forest_environment.tar> -C flightmare/flightpy/conf
 
 You will also need to download our Unity resources and binaries. Download `simulation/flightrender.tar` (443MB) from [Datashare](https://upenn.app.box.com/v/evfly-grasp-rpg) and then:
 ```
-tar -xvf <path/to/flightrender.tar> -C flightmare/flightrender
+tar -xvf <path/to/flightrender.tar> -C flightmare/flightrender --strip-components=1
 ```
 
-Then, install the dependencies via a given script:
+Then, build the workspace:
 ```
 bash setup_ros.bash
 cd ../..
@@ -99,18 +99,39 @@ source devel/setup.bash
 cd src/evfly
 ```
 
+Note that you may have to install additional necessary packages, such as rqt_gui, opencv, libzmqpp-dev, and others. Also note that we catkin ignore the package `evfly_ros` by default so that you don't need to install event camera and other ROS packages just for simulation or training work.
+
+Please add the following lines to your .bashrc so you may run the simulation from any open shell:
+```
+export FLIGHTMARE_PATH=/path/to/evfly/flightmare
+source ~/evfly_ws/devel/setup.bash
+```
+
 ## Test (simulation)
 
 As we describe in the paper, testing the model in real-time simulation necessitates estimating eventstreams via difference-of-log-images, which is out-of-distribution for the Vid2E-trained models. Therefore, do not expect high success rates in simulation test runs.
+
+You'll likely need to install the following python packages if you haven't already:
+```
+tensorboard #if you don't set DEPLOYMENT = True in learner/learner.py
+h5py
+opencv
+torch
+torchvision
+tqdm
+imageio
+configargparse
+matplotlib
+```
 
 #### Download pretrained weights
 
 Download `pretrained_models.tar` (50MB) from [Datashare](https://upenn.app.box.com/v/evfly-grasp-rpg). This tarball includes a number of simulation-pre-trained and real-fine-tuned models. For simulation testing in the provided forest environment, we will use the jointly-trained $D(\theta),V(\phi)$ model `sim_forest_DthetaVphi.pth`.
 ```
-tar -xvf <path/to/pretrained_models.tar> -C models
+tar -xvf <path/to/pretrained_models.tar>
 ```
 
-#### Edit the config file
+#### (optional) Edit the config file
 
 *If you are just interested in the same forest environment we use in the paper, you should not need to edit the config file.*
 
@@ -123,12 +144,12 @@ When running the simulation (the following section), you can set any number `N` 
 
 #### Run the simulation
 
-The `launch_evaluation.bash` script launches Flightmare and the trained model for depth-based flight when using `vision` mode. To run trials:
+The `launch_evaluation.bash` script launches Flightmare and the trained model for event-based flight when using `vision` mode. To run trials:
 ```
 bash launch_evaluation.bash <N> vision
 ```
 
-Some details: If you look at the bash script, you'll see multiple python scripts being run. `envtest/ros/evaluation_node.py` counts crashes, starts and aborts trials, and prints other statistics to the console. `envtest/ros/run_competition.py` subscribes to input depth images and passes them to the corresponding functions (located in `envtest/ros/user_code.py`) that run the model and return desired velocity commands. The topic `/debug_img1` streams a depth image with an overlaid velocity vector arrow which indicates the model's output velocity command.
+Some details: If you look at the bash script, you'll see multiple python scripts being run. `envtest/ros/run_competition.py` subscribes to input images, computes approximated event batches, and passes them to the model to get desired velocity commands. It also selects the config file from which to load model parameters, currently set to `learner/configs/eval_config_sim_joint.txt` which utilizes the jointly-trained $D(\theta)$ and $V(\phi)$ model from simulation. `envtest/ros/evaluation_node.py` counts crashes, starts and aborts trials, and prints other statistics to the console. The topic `/debug_img1` streams images from the quadrotor grayscale camera and overlays approximate events on it in red-blue color. `/debug_img2` shows the model predicted depth reconstruction with an overlaid arrow indicating the model's output velocity command.
 
 ## Dataset generation (simulation)
 
@@ -138,15 +159,14 @@ To create a dataset of events, depth images, and desired velocity commands from 
 
 Ensure that the `flightmare/flightpy/configs/vision/config.yaml` parameters are unchanged. Default evaluation parameters specified in `envtest/ros/evaluation_config.yaml` resets the environment once the drone reaches the target `x=60`, the drone exits a specified bounding box, or the trial times out.
 
-Run Flightmare in `state` mode to activate the privileged expert policy. Data will be stored upon each rollout in `envtest/ros/train_set`:
+Run Flightmare in `state` mode to activate the privileged expert policy. Data will be stored upon each rollout in `envtest/ros/rollouts` (a folder created in the setup script):
 ```
-mkdir -p envtest/ros/train_set
 bash launch_evaluation.bash <N> state
 ```
 
-After populating the `train_set` directory, you can move the relevant trajectory folders to your desired dataset directory:
+After populating the `rollouts` directory, you can move the relevant trajectory folders to your desired dataset directory. If copying all folders, make sure no previous, unwanted rollouts are present in the directory.
 ```
-mv envtest/ros/train_set/* data/datasets/new_dataset/
+mv envtest/ros/rollouts/* data/datasets/new_dataset/
 ```
 
 #### 2. Run Vid2E to convert images to events
@@ -278,7 +298,7 @@ python learner/evaluation_tools.py --config learner/configs/eval_config_origunet
 
 ## Real-world deployment
 
-We provide a ROS1 package `evfly_ros` for running the trained models on an incoming event camera stream. This package does not provide an autopilot or flight controller, and is meant to be used in conjunction with a broader autonomy architecture (see [KumarRobotics Autonomous Flight](https://github.com/KumarRobotics/kr_autonomous_flight), [RPG Agilicious](https://github.com/uzh-rpg/agilicious), [PX4](https://github.com/px4/px4-autopilot/), [Betaflight](https://github.com/betaflight/betaflight)) In the `run.py` script, you should modify the paths `EVFLY_PATH` and `CALIB_FILE`. Additionally, you need to modify the ROS topic names in the subscribers and publishers as appropriate. On a 12-core, 16GB RAM, cpu-only machine (similar to that used for hardware experiments presented in the paper) the model `OrigUNet_w_VITFLY_ViTLSTM` runs a forward pass in approximately 73ms.
+We provide a ROS1 package `evfly_ros` for running the trained models on an incoming event camera stream. This package does not provide an autopilot or flight controller, and is meant to be used in conjunction with a broader autonomy architecture (see [KumarRobotics Autonomous Flight](https://github.com/KumarRobotics/kr_autonomous_flight), [RPG Agilicious](https://github.com/uzh-rpg/agilicious), [PX4](https://github.com/px4/px4-autopilot/), [Betaflight](https://github.com/betaflight/betaflight)). To build the package, remove the `CATKIN_IGNORE` file in the package and `catkin build evfly_ros` from the evfly_ws location. In the `run.py` script, you should modify the paths `EVFLY_PATH` and `CALIB_FILE`. Additionally, you need to modify the ROS topic names in the subscribers and publishers as appropriate. On a 12-core, 16GB RAM, cpu-only machine (similar to that used for hardware experiments presented in the paper) the model `OrigUNet_w_VITFLY_ViTLSTM` runs a forward pass in approximately 73ms.
 
 Run your event camera driver, our C++ events processing node, and the model inference node with:
 ```

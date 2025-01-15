@@ -234,8 +234,8 @@ class Evaluator:
         plt.grid()
         plt.savefig(nearestDistPlots)
 
-        # save trainset folder name so more stats can be extracted later
-        subdirs = sorted(os.listdir('/home/anish/evfly_ws/src/evfly/envtest/ros/train_set'))
+        # save folder name so more stats can be extracted later
+        subdirs = sorted(os.listdir('/home/anish/evfly_ws/src/evfly/envtest/ros/rollouts'))
         stats_dir = subdirs[-1]
 
         #Time Taken and num collisions Dat File

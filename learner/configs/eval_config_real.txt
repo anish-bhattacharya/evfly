@@ -28,7 +28,7 @@ eval_tools_freq = 0
 eval_tools_on_best = True
 load_trainval = False
 combine_checkpoints = True
-checkpoint_path = [/home/anish1/evfly_ws/src/evfly/data/pretrained_models/real_forest_Dtheta.pth, /home/anish1/evfly_ws/src/evfly/data/pretrained_models/sim_vitfly-vitlstm_Vphi.pth]
+checkpoint_path = [/home/anish/evfly_ws/src/evfly/pretrained_models/real_forest_Dtheta.pth, /home/anish/evfly_ws/src/evfly/pretrained_models/sim_vitfly-vitlstm_Vphi.pth]
 
 lr = 1e-4
 lr_warmup_epochs = 0

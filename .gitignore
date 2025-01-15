@@ -40,10 +40,7 @@ learner/logs
 learner/temp.png
 learner/data/
 *.code-workspace
-envtest/ros/train_set.zip
-envtest/ros/train_set/
-envtest/ros/temp.py
-envtest/ros/model.pth
+envtest/ros/rollouts
 
 *model*.pth
 *animation*.gif
