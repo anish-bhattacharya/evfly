@@ -360,8 +360,8 @@ class Learner:
 
                 self.mylogger(f'[SETUP] Multiple model types {self.model_type} provided.')
                 
-                    self.mylogger(f'[SETUP] Creating model of type {self.model_type[0]} and {self.model_type[1]}')
                 if self.model_type[0] == 'OrigUNet' and self.model_type[1] == 'VITFLY_ViTLSTM':
+                    self.mylogger(f'[SETUP] Creating model of type {self.model_type[0]} and {self.model_type[1]}')
                     self.model = OrigUNet_w_VITFLY_ViTLSTM(
                         num_in_channels=self.num_in_channels, 
                         num_out_channels=self.num_out_channels,

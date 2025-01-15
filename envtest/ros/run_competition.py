@@ -86,8 +86,8 @@ class AgilePilotNode:
         ## Set up NN and other configurations ##
         ########################################
 
-        # read arguments from learner/configs/lstm.txt
-        self.args = argparsing(filename=AF_PATH+'/learner/configs/lstm.txt')
+        # read arguments from a given config file
+        self.args = argparsing(filename=AF_PATH+'/learner/configs/eval_config_sim_joint.txt')
         # define enc and dec params
         # make dictionaries enc_params and dec_params with the above args
         self.enc_params = {
@@ -186,7 +186,7 @@ class AgilePilotNode:
         self.data_collection_xrange = [0+5, self.goal_distance-.17*self.goal_distance]
 
         # make the folder for the epoch
-        self.folder = AF_PATH+f"/utils/rollouts/{int(time.time()*1000) if (self.exp_name is None or self.exp_name == '') else self.exp_name}"
+        self.folder = AF_PATH+f"/envtest/ros/rollouts/{int(time.time()*1000) if (self.exp_name is None or self.exp_name == '') else self.exp_name}"
         os.mkdir(self.folder)
 
         # if this is a named experiment, save the config file to maintain information of run, including scene/env/etc
@@ -770,7 +770,7 @@ class AgilePilotNode:
 
         if self.do_events:
 
-            im_dbg1_evs = visualize_evim(self.events) # copying cropped and horizon-aligned image
+            im_dbg1_evs, enc = simple_evim(self.events, scaledown_percentile=.8, style='redblue-on-black') # copying cropped and horizon-aligned image
             # add in image for better visualization
             im_dbg1 = np.stack(((im_dbg1*255.0).astype(np.uint8),)*3, axis=-1)
             if self.events is not None:
@@ -909,7 +909,7 @@ class AgilePilotNode:
                         self.col,
                         ]
 
-        self.data_buffer = self.data_buffer.append(pd.Series(data_entry, index=self.data_buffer.columns), ignore_index=True)
+        self.data_buffer = pd.concat([self.data_buffer, pd.Series(data_entry, index=self.data_buffer.columns)], ignore_index=True)
 
         # append data to csv file every data_buffer_maxlength entries
         if len(self.data_buffer) >= self.data_buffer_maxlength:

@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
+cmake_policy(SET CMP0048 NEW)
 project(evfly_ros)
 
 ## Compile as C++11, supported in ROS Kinetic and newer

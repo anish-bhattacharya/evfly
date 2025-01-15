@@ -45,7 +45,9 @@ envtest/ros/rollouts
 *model*.pth
 *animation*.gif
 
-utils/stored_metrics/*
+envtest/ros/rollouts/
+envtest/ros/stored_metrics/
+
 *.dat
 */summary.yaml
 envtest/ros/*set/
@@ -57,3 +59,8 @@ data/
 
 *.bag
 
+pretrained_models
+
+dodgedrone_simulation/dodgelib/externals/
+
+evfly_ros/CATKIN_IGNORE

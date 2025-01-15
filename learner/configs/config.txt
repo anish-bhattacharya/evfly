@@ -1,5 +1,5 @@
 device = cuda
-basedir = /home/anish1/evfly_ws/src/evfly
+basedir = /home/anish/evfly_ws/src/evfly
 logdir = learner/logs
 datadir = ../../data/datasets
 
