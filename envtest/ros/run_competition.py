@@ -909,7 +909,11 @@ class AgilePilotNode:
                         self.col,
                         ]
 
-        self.data_buffer = pd.concat([self.data_buffer, pd.Series(data_entry, index=self.data_buffer.columns)], ignore_index=True)
+        # bugfix: this is wrong
+        # self.data_buffer = pd.concat([self.data_buffer, pd.Series(data_entry, index=self.data_buffer.columns)], ignore_index=True)
+        # untested fix for now
+        new_row = pd.DataFrame([data_entry], columns=self.data_buffer.columns)
+        self.data_buffer = pd.concat([self.data_buffer, new_row], ignore_index=True)
 
         # append data to csv file every data_buffer_maxlength entries
         if len(self.data_buffer) >= self.data_buffer_maxlength:

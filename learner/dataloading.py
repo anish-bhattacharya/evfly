@@ -31,9 +31,13 @@ def dataloader(data_dir, val_split=0., short=0, seed=None, train_val_dirs=None, 
 
     # NOTE use_h5 argument exists for purposes like cleaning datasets, forming h5, etc, which requires loading of original dataset in trajectory-folder format
 
-    # complete the data_dir to an absolute path if needed
-    if '/' not in data_dir:
-        data_dir = opj(f'/home/{uname}/evfly_ws/data/datasets', data_dir)
+    # # complete the data_dir to an absolute path if needed
+    # if '/' not in data_dir:
+    #     data_dir = opj(f'/home/{uname}/evfly_ws/data/datasets', data_dir)
+
+    # given a relative path, complete it to an absolute path
+    if not os.path.isabs(data_dir):
+        data_dir = opj(os.getcwd(), data_dir)
 
     # assign logger function
     if logger is None:
@@ -104,8 +108,9 @@ def dataloader(data_dir, val_split=0., short=0, seed=None, train_val_dirs=None, 
         if not found_h5:
 
             # get list of folders in data_dir that are just a number
-            # traj_folders = sorted(glob.glob(opj(data_dir, '*')))
-            traj_folders = sorted(folder for folder in glob.glob(opj(data_dir, '*')) if os.path.basename(folder).isdigit())
+            # NOTE not doing this ^ since to-events requires looking at all folders. revisit?
+            # traj_folders = sorted(folder for folder in glob.glob(opj(data_dir, '*')) if os.path.basename(folder).isdigit())
+            traj_folders = sorted(glob.glob(opj(data_dir, '*')))
             traj_folders_ids = np.arange(len(traj_folders)) # to keep track of folder idxs
         
         else:

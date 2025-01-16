@@ -64,3 +64,5 @@ pretrained_models
 dodgedrone_simulation/dodgelib/externals/
 
 evfly_ros/CATKIN_IGNORE
+
+envsim/resources/rviz/envsim.rviz
