@@ -170,9 +170,9 @@ After populating the `rollouts` directory, you can move the relevant trajectory 
 mv envtest/ros/rollouts/* data/datasets/new_dataset/
 ```
 
-#### 2. Run Vid2E to convert images to events
+#### 2. Run Vid2E to convert images to events (GPU installation of Vid2E required for now)
 
-Install [Vid2E](https://github.com/uzh-rpg/rpg_vid2e) then run the following script to approximate events from the collected images. A numpy object array `evs_frames.npy` is created that contains a sequence of event frames for each trajectory in the dataset. Each event frame is a float array for all events within the time window between consecutive image frames, and contains the sum of positive and negative events at a given pixel location multiplied by the corresponding contrast thresholds (defaults values are +/-0.2).
+Install [Vid2E](https://github.com/uzh-rpg/rpg_vid2e) then run the following script to approximate events from the collected images. Please note that the `--cpu` flag is legacy and not supported as of now. A numpy object array `evs_frames.npy` is created that contains a sequence of event frames for each trajectory in the dataset. Each event frame is a float array for all events within the time window between consecutive image frames, and contains the sum of positive and negative events at a given pixel location multiplied by the corresponding contrast thresholds (defaults values are +/-0.2).
 
 ```
 python utils/to_events.py --dataset data/datasets/new_dataset --output_path data/datasets/new_dataset --acc_scheme time --keep_collisions
