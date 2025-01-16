@@ -1,7 +1,8 @@
 # Monocular Event-Based Vision for Obstacle Avoidance with a Quadrotor
 
 **Updates:**
-- *December 2024:* Open-source code released for (still work in progress -- relevant simulation submodule updates being provided soon) simulation rollouts and data collection, real data collection, events+depth calibration, training models, and real deployment. Note that file paths and other parameters in various scripts may have to be manually adjusted by the user, and code is provided as-is.
+- *January 2025:* Simulation installation and running instructions are corrected and verified for an Ubuntu 20 and ROS Noetic machine. Happy flying!
+- *December 2024:* Open-source code released for simulation rollouts and data collection, real data collection, events+depth calibration, training models, and real deployment. Note that file paths and other parameters in various scripts may have to be manually adjusted by the user, and code is provided as-is.
 
 [Project page](https://www.anishbhattacharya.com/research/evfly)  &nbsp;
 [Paper](https://openreview.net/pdf?id=82bpTugrMt)  &nbsp;
