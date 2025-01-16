@@ -152,7 +152,7 @@ class AgilePilotNode:
 
         # logging
         self.init = 0
-        self.col = None
+        self.col = 0
         self.t1 = 0 #Time flag
         self.timestamp = 0 #Time stamp initial
         # self.last_valid_im = None #Image that will be logged
@@ -909,9 +909,6 @@ class AgilePilotNode:
                         self.col,
                         ]
 
-        # bugfix: this is wrong
-        # self.data_buffer = pd.concat([self.data_buffer, pd.Series(data_entry, index=self.data_buffer.columns)], ignore_index=True)
-        # untested fix for now
         new_row = pd.DataFrame([data_entry], columns=self.data_buffer.columns)
         self.data_buffer = pd.concat([self.data_buffer, new_row], ignore_index=True)
 
@@ -960,7 +957,7 @@ class AgilePilotNode:
         try:
             self.col = self.if_collide(self.obs_msg.obstacles[0])
         except:
-            self.col = False
+            self.col = 0
 
     def im_callback(self, im_msg):
 
@@ -1045,9 +1042,9 @@ class AgilePilotNode:
         margin = dist - obs.scale - self.quad_radius
         # Ground hit condition
         if margin < 0 or self.state.pos[2] <= 0.1:
-            return True
+            return 1
         else:
-            return False
+            return 0
 
     def publish_command(self, command):
         if command.mode == AgileCommandMode.SRT:

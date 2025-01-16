@@ -260,6 +260,9 @@ if args.path_evs_cont == '':
 
         else:
 
+
+            """
+
             # esim_py (cpu) uses cpp code that needs a list of absolute image paths and a list of timestamps
 
             esim = esim_py.EventSimulator(pos_thresh, neg_thresh, 0.0, 1e-5, True)
@@ -285,6 +288,10 @@ if args.path_evs_cont == '':
 
             # list of dicts
             events.append(traj_events)
+
+            """
+
+            print('esim_py not implemented yet for cpu-based events generation.')
 
 else:
 
