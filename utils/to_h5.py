@@ -24,6 +24,11 @@ def convert_to_h5(learner, h5_path):
     train_traj_starts = np.cumsum(learner.train_trajlength) - learner.train_trajlength
 
     for traj_i, traj_name in enumerate(learner.train_dirs):
+
+        # if traj_name ends with a / then remove it
+        if traj_name[-1] == '/':
+            traj_name = traj_name[:-1]
+
         # make group with last part of trajectory name
         traj_group = dataset.create_group(traj_name.split('/')[-1])
 
@@ -74,7 +79,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 4:
         print(f'Usage: python to_h5.py <dataset> <task:convert/view> <do_transform:True/False>')
         sys.exit(1)
-    dataset = sys.argv[1]
+    dataset = sys.argv[1] # absolute path
     task = sys.argv[2]
     do_transform = sys.argv[3] == 'True'
     if len(sys.argv) > 4:
@@ -86,7 +91,7 @@ if __name__ == '__main__':
         events = 'evs_frames'
     print(f'Using events {events} (difflog 4th argument triggers evs_frames_difflog, else uses evs_frames)')
 
-    h5_path = opj(f'/home/{uname}/evfly_ws/data/datasets', f'{dataset}'+f"{'_difflog' if 'difflog' in events else ''}"+f"{'_tf' if do_transform else ''}"+'.h5')
+    h5_path = dataset+'.h5'
 
     if task == 'convert':
         ### convert a dataset

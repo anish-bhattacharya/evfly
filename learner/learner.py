@@ -301,7 +301,11 @@ class Learner:
 
         self.dataset_dir = []
         for dn in self.dataset_name:
-            self.dataset_dir.append(opj(self.datadir, dn))
+            # if not an abs path already
+            if not os.path.isabs(dn):
+                self.dataset_dir.append(opj(self.datadir, dn))
+            else:
+                self.dataset_dir.append(dn)
 
         #################
         ## Dataloading ##
@@ -516,7 +520,11 @@ class Learner:
 
         for data_dir in self.dataset_dir:
 
-            data_dir_fullpath = opj(self.basedir, data_dir)
+            # if not abs path
+            if not os.path.isabs(data_dir):
+                data_dir_fullpath = opj(self.basedir, data_dir)
+            else:
+                data_dir_fullpath = data_dir
 
             ## Dataloading
 

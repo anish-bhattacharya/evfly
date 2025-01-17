@@ -110,7 +110,7 @@ def dataloader(data_dir, val_split=0., short=0, seed=None, train_val_dirs=None, 
             # get list of folders in data_dir that are just a number
             # NOTE not doing this ^ since to-events requires looking at all folders. revisit?
             # traj_folders = sorted(folder for folder in glob.glob(opj(data_dir, '*')) if os.path.basename(folder).isdigit())
-            traj_folders = sorted(glob.glob(opj(data_dir, '*')))
+            traj_folders = sorted(glob.glob(opj(data_dir, '*/')))
             traj_folders_ids = np.arange(len(traj_folders)) # to keep track of folder idxs
         
         else:
