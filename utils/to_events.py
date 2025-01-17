@@ -292,6 +292,7 @@ if args.path_evs_cont == '':
             """
 
             print('esim_py not implemented yet for cpu-based events generation.')
+            exit()
 
 else:
 
@@ -326,7 +327,7 @@ if args.acc_scheme == 'continuous':
         for traj_idx in range(events_objs.shape[0]):
             print(f'{events_objs[traj_idx].shape[0]} events in traj idx {traj_idx}')
 
-        save_filename = os.path.join(args.output_path, f"evs{'_upsamp' if args.upsample else ''}{'_tf' if args.do_transform else ''}+f'_{args.output_suffix}'+.pkl")
+        save_filename = os.path.join(args.output_path, f"evs{'_upsamp' if args.upsample else ''}{'_tf' if args.do_transform else ''}+f'{'_'+{args.output_suffix} if args.output_suffix!='' else ''}'+.pkl")
 
         # print(f'Size of events is {sys.getsizeof(events_objs)/1e9} GB')
         print(f'Saving events to {save_filename}')
@@ -446,13 +447,13 @@ if args.acc_scheme == 'time' or args.also_time:
         # save as a numpy object array
         if len(alltrajs_frames) == 1:
             # in this single-trajectory case, save as float
-            np.save(os.path.join(args.output_path, f'evs_frames'+f"{'_tf' if args.do_transform else ''}"+f"_{args.output_suffix}"+'.npy'), np.asarray(alltrajs_frames))
+            np.save(os.path.join(args.output_path, f'evs_frames'+f"{'_tf' if args.do_transform else ''}"+f"{'_'+{args.output_suffix} if args.output_suffix!='' else ''}"+'.npy'), np.asarray(alltrajs_frames))
         else:
             # assign each element of an object array the data from each trajectory
             object_array = np.empty(len(alltrajs_frames), dtype=object)
             for i in range(len(alltrajs_frames)):
                 object_array[i] = alltrajs_frames[i]
-            np.save(os.path.join(args.output_path, f'evs_frames'+f"{'_tf' if args.do_transform else ''}"+f"_{args.output_suffix}"+'.npy'), object_array)
+            np.save(os.path.join(args.output_path, f'evs_frames'+f"{'_tf' if args.do_transform else ''}"+f"{'_'+{args.output_suffix} if args.output_suffix!='' else ''}"+'.npy'), object_array)
 
     # save difflog frames
     if len(log_images_all) > 0:
@@ -462,8 +463,8 @@ if args.acc_scheme == 'time' or args.also_time:
         # save as a numpy object array
         if len(alltrajs_frames_difflog) == 1:
             # in this single-trajectory case, save as float
-            np.save(os.path.join(args.output_path, f'evs_frames_difflog'+f"{'_tf' if args.do_transform else ''}"+f"_{args.output_suffix}"+'.npy'), np.asarray(alltrajs_frames_difflog))
+            np.save(os.path.join(args.output_path, f'evs_frames_difflog'+f"{'_tf' if args.do_transform else ''}"+f"{'_'+{args.output_suffix} if args.output_suffix!='' else ''}"+'.npy'), np.asarray(alltrajs_frames_difflog))
         else:
-            np.save(os.path.join(args.output_path, f'evs_frames_difflog'+f"{'_tf' if args.do_transform else ''}"+f"_{args.output_suffix}"+'.npy'), np.asarray(alltrajs_frames_difflog, dtype=object))
+            np.save(os.path.join(args.output_path, f'evs_frames_difflog'+f"{'_tf' if args.do_transform else ''}"+f"{'_'+{args.output_suffix} if args.output_suffix!='' else ''}"+'.npy'), np.asarray(alltrajs_frames_difflog, dtype=object))
 
     print(f'Frames done in {time.time()-st_t:.2f} s')
