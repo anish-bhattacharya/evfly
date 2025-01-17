@@ -179,11 +179,17 @@ Install [Vid2E](https://github.com/uzh-rpg/rpg_vid2e) then run the following scr
 python utils/to_events.py --dataset data/datasets/new_dataset --output_path data/datasets/new_dataset --acc_scheme time --keep_collisions
 ```
 
+NOTE: If you struggle to install dependencies and run the above, I have included a sample conda `vid2e_environment.yml` that should include the packages necessary to run the above script. It is not minimal, and has many unnecessary packages, but you may try it: `conda env create -f vid2e_environment.yml`.
+
 #### 3. (optional) Package data into h5 files
 
 Our dataloader can read data from the format of trajectory folders+events npy file, but dataloading is faster when data is packaged into h5 files. To do this, run the following script to create a `new_dataset.h5` file that contains the events, depth images, and telemetry data for each trajectory in the dataset.
 ```
-python utils/to_h5.py new_dataset convert False
+python utils/to_h5.py /absolute/path/to/new_dataset convert False
+```
+You can confirm the contents of the h5 file by running:
+```
+python utils/to_h5.py /absolute/path/to/new_dataset view False
 ```
 
 ## Dataset generation (real-world)
