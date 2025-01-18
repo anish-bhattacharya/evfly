@@ -312,7 +312,7 @@ Run your event camera driver (Prophesee), our C++ events processing node, and th
 ```
 roslaunch evfly_ros evs_proc.launch
 ```
-But if you are using DVS cameras, our C++ events processing node, and the model inference node with:
+For DVS/DAVIS event cameras you may instead use:
 ```
 roslaunch evfly_dv_ros dvs.launch
 ```
