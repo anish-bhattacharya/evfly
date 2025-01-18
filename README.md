@@ -101,7 +101,7 @@ source devel/setup.bash
 cd src/evfly
 ```
 
-Note that you may have to install additional necessary packages, such as rqt_gui, opencv, libzmqpp-dev, and others. Also note that we catkin ignore the package `evfly_ros` by default so that you don't need to install event camera and other ROS packages just for simulation or training work.
+Note that you may have to install additional necessary packages, such as rqt_gui, opencv, libzmqpp-dev, and others. Also note you may include a `CATKIN_IGNORE` in the ROS packages `evfly_ros` and `evfly_dv_ros` so that you don't need to install event camera dependencies while just doing simulation or training work.
 
 Please add the following lines to your .bashrc so you may run the simulation from any open shell:
 ```
@@ -306,9 +306,9 @@ python learner/evaluation_tools.py --config learner/configs/eval_config_origunet
 
 ## Real-world deployment
 
-We provide a ROS1 package `evfly_ros` for running the trained models on an incoming event camera stream. This package does not provide an autopilot or flight controller, and is meant to be used in conjunction with a broader autonomy architecture (see [KumarRobotics Autonomous Flight](https://github.com/KumarRobotics/kr_autonomous_flight), [RPG Agilicious](https://github.com/uzh-rpg/agilicious), [PX4](https://github.com/px4/px4-autopilot/), [Betaflight](https://github.com/betaflight/betaflight)). To build the package, remove the `CATKIN_IGNORE` file in the package and `catkin build evfly_ros` from the evfly_ws location. In the `run.py` script, you should modify the paths `EVFLY_PATH` and `CALIB_FILE`. Additionally, you need to modify the ROS topic names in the subscribers and publishers as appropriate. On a 12-core, 16GB RAM, cpu-only machine (similar to that used for hardware experiments presented in the paper) the model `OrigUNet_w_VITFLY_ViTLSTM` runs a forward pass in approximately 73ms.
+We provide a ROS1 package `evfly_ros` for running the trained models on an incoming event camera stream. This package does not provide an autopilot or flight controller, and is meant to be used in conjunction with a broader autonomy architecture (see [KumarRobotics Autonomous Flight](https://github.com/KumarRobotics/kr_autonomous_flight), [RPG Agilicious](https://github.com/uzh-rpg/agilicious), [PX4](https://github.com/px4/px4-autopilot/), [Betaflight](https://github.com/betaflight/betaflight)). To build the package, `catkin build evfly_ros` from the evfly_ws location (ensure you've removed any `CATKIN_IGNORE` file in the package). In the `run.py` script, you should modify the paths `EVFLY_PATH` and `CALIB_FILE`. Additionally, you need to modify the ROS topic names in the subscribers and publishers as appropriate. On a 12-core, 16GB RAM, cpu-only machine (similar to that used for hardware experiments presented in the paper) the model `OrigUNet_w_VITFLY_ViTLSTM` runs a forward pass in approximately 73ms.
 
-Run your event camera driver, our C++ events processing node, and the model inference node with:
+Run your event camera driver (Prophesee), our C++ events processing node, and the model inference node with:
 ```
 roslaunch evfly_ros evs_proc.launch
 ```
