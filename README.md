@@ -312,6 +312,10 @@ Run your event camera driver (Prophesee), our C++ events processing node, and th
 ```
 roslaunch evfly_ros evs_proc.launch
 ```
+But if you are using DVS cameras, our C++ events processing node, and the model inference node with:
+```
+roslaunch evfly_dv_ros dvs.launch
+```
 
 Model predicted depth and velocities, as well as the input events packaged into a frame, are published on the `/output` topics.
 
