@@ -9,6 +9,12 @@
 [Paper](https://openreview.net/pdf?id=82bpTugrMt)  &nbsp;
 [Video](https://www.youtube.com/watch?v=NI513KE9DYo)
 
+We achieve sim-to-real transfer of event-vision robot control policies by leveraging depth prediction as a pretext task that be tuned in a post-training phase. We demonstrate flight indoor & outdoor, in dark and lighted conditions, at speeds of 1-5m/s, with two different event cameras.
+
+<img src="media/forest/dji-lowres.gif" width="174" height="97"> <img src="media/forest/evs-lowres.gif" width="130" height="97"> <img src="media/dark/perspective-view-lowres.gif" width="174" height="97"> <img src="media/dark/evs-lowres.gif" width="130" height="97">
+
+<img src="media/multi/perspview-lowres.gif" width="174" height="97"> <img src="media/multi/evs-lowres.gif" width="130" height="97"> <img src="media/penno/perspview-lowres.gif" width="174" height="97"> <img src="media/penno/evs-lowres.gif" width="130" height="97">
+
 <!-- Table of contents with links to each section -->
 ## Table of Contents
 - [Introduction](#introduction)
@@ -41,20 +47,6 @@ We present the first static-obstacle avoidance method for quadrotors using just 
 By leveraging depth prediction as a pretext task in our learning framework, we can pre-train a reactive obstacle avoidance events-to-control policy with approximated, simulated events and then fine-tune the perception component with limited events-and-depth real-world data to achieve obstacle avoidance in indoor and outdoor settings.
 
 We demonstrate this across two quadrotor-event camera platforms in multiple settings and find, contrary to traditional vision-based works, that low speeds (1m/s) make the task harder and more prone to collisions, while high speeds (5m/s) result in better event-based depth estimation and avoidance. We also find that success rates in outdoor scenes can be significantly higher than in certain indoor scenes.
-
-<!-- GIFs -->
-
-#### Real demonstrations
-
-We successfully avoid obstacles at speeds of 1-5m/s, indoor and outdoor, in the dark and in the forest.
-
-<img src="media/forest/dji-lowres.gif" width="347" height="195"> <img src="media/forest/evs-lowres.gif" width="260" height="195">
-
-<img src="media/dark/perspective-view-lowres.gif" width="347" height="195"> <img src="media/dark/evs-lowres.gif" width="260" height="195">
-
-<img src="media/multi/perspview-lowres.gif" width="347" height="195"> <img src="media/multi/evs-lowres.gif" width="260" height="195">
-
-<img src="media/penno/perspview-lowres.gif" width="347" height="195"> <img src="media/penno/evs-lowres.gif" width="260" height="195">
 
 ## Simulator installation
 
