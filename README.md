@@ -1,4 +1,4 @@
-# Monocular Event-Based Vision for Obstacle Avoidance with a Quadrotor
+# Monocular Event-Based Vision for Obstacle Avoidance with a Quadrotor (CoRL 2024)
 
 **Updates:**
 - *January 2025:* Bugfixes on logging during rollouts and simulated event dataset generation procedure.
