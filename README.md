@@ -1,6 +1,7 @@
 # Monocular Event-Based Vision for Obstacle Avoidance with a Quadrotor (CoRL 2024)
 
 **Updates:**
+- *March 2025:* Added handheld event+depth datasets for lit and dark indoor scenes.
 - *January 2025:* Bugfixes on logging during rollouts and simulated event dataset generation procedure.
 - *January 2025:* Simulation installation and running instructions are corrected and verified for an Ubuntu 20 and ROS Noetic machine. Happy flying!
 - *December 2024:* Open-source code released for simulation rollouts and data collection, real data collection, events+depth calibration, training models, and real deployment. Note that file paths and other parameters in various scripts may have to be manually adjusted by the user, and code is provided as-is.
