@@ -23,7 +23,7 @@ import numpy.lib.recfunctions as rf
 #   bool polarity
 
 
-topic = '/event_camera/events'
+event_topic = '/event_camera/events'
 input_bag_path = sys.argv[1]
 
 decoder = Decoder()
@@ -48,7 +48,12 @@ with rosbag.Bag(output_bag_path, 'w') as outbag:
     # Open the input bag file for reading
     with rosbag.Bag(input_bag_path, 'r') as inbag:
         # Iterate through each message in the input bag
-        for topic, msg, t in inbag.read_messages(topics=topic):
+        for topic, msg, t in inbag.read_messages():
+
+            # Pass through all non-event topics unchanged
+            if topic != event_topic:
+                outbag.write(topic, msg, t)
+                continue
 
             if first_rosbag_timestamp is None:
                 first_rosbag_timestamp = t.to_nsec()
