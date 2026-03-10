@@ -2,11 +2,10 @@
 
 import rosbag, rospy
 import sys
-sys.path.append('/home/anish/evfly_ws/src/event_array_py')
-from event_array_py import Decoder
-# manually include path
-# sys.path.append('/home/anish/Downloads/event_array_py-master/build')
-from dvs_msgs.msg import EventArray, Event
+# https://github.com/ros-event-camera/event_camera_py/
+from event_camera_py import Decoder # need to catkin build event_camera_py
+# https://github.com/uzh-rpg/rpg_dvs_ros
+from dvs_msgs.msg import EventArray, Event # need to catkin build dvs_msgs from rpg_dvs_ros
 import numpy.lib.recfunctions as rf
 
 # rosmsg show dvs_msgs/EventArray
@@ -21,7 +20,6 @@ import numpy.lib.recfunctions as rf
 #   uint16 y
 #   time ts
 #   bool polarity
-
 
 event_topic = '/event_camera/events'
 input_bag_path = sys.argv[1]
