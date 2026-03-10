@@ -7,6 +7,7 @@ from event_camera_py import Decoder # need to catkin build event_camera_py
 # https://github.com/uzh-rpg/rpg_dvs_ros
 from dvs_msgs.msg import EventArray, Event # need to catkin build dvs_msgs from rpg_dvs_ros
 import numpy.lib.recfunctions as rf
+from tqdm import tqdm
 
 # rosmsg show dvs_msgs/EventArray
 # std_msgs/Header header
@@ -45,6 +46,15 @@ output_bag_path = sys.argv[2]
 with rosbag.Bag(output_bag_path, 'w') as outbag:
     # Open the input bag file for reading
     with rosbag.Bag(input_bag_path, 'r') as inbag:
+        # Pre-count number of Metavision event messages for progress bar
+        try:
+            total_event_msgs = inbag.get_message_count(topic_filters=[event_topic])
+        except TypeError:
+            # Fallback if this rosbag version doesn't support topic_filters kwarg
+            total_event_msgs = inbag.get_message_count([event_topic])
+
+        pbar = tqdm(total=total_event_msgs, desc="Converting event messages")
+
         # Iterate through each message in the input bag
         for topic, msg, t in inbag.read_messages():
 
@@ -115,3 +125,6 @@ with rosbag.Bag(output_bag_path, 'w') as outbag:
             outbag.write('/capture_node/events', event_array, t)
 
             n += 1
+            pbar.update(1)
+
+        pbar.close()
