@@ -1,0 +1,31 @@
+name: calib_tools
+channels:
+  - robostack-staging   # provides ROS Noetic packages (rosbag, cv_bridge, etc.)
+  - conda-forge         # base scientific Python stack
+  - defaults
+dependencies:
+  # Python version
+  - python=3.9          # ROS Noetic on robostack targets 3.9
+
+  # ----- ROS Noetic core (via robostack) -----
+  - ros-noetic-ros-base         # core ROS runtime
+  - ros-noetic-rosbag           # rosbag read/write
+  - ros-noetic-cv-bridge        # ROS <-> OpenCV image conversion
+  - ros-noetic-sensor-msgs      # standard ROS sensor message types
+
+  # ----- Computer vision -----
+  - opencv                      # cv2 (includes all codecs)
+
+  # ----- HDF5 / e2calib -----
+  - h5py                        # HDF5 file read/write (used by h5writer)
+  - numpy                       # array ops, pulled in by most deps anyway
+
+  # ----- Utilities -----
+  - tqdm                        # progress bars
+  - pathlib2                    # backport safety (pathlib is stdlib in 3.9 but some tools expect this)
+
+  # ----- pip extras (anything not on conda channels) -----
+  - pip
+  - pip:
+    - pyyaml                    # often needed by ROS message parsers at runtime
+

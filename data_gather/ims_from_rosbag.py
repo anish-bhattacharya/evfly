@@ -9,7 +9,7 @@ import rosbag
 from cv_bridge import CvBridge
 from tqdm import tqdm
 
-def extract_infra1_images(bag_path, output_dir):
+def extract_infra1_images(bag_path, output_dir, topic="/grayscale_camera/image_raw"):
     # Create the output directory if it does not exist
     os.makedirs(output_dir, exist_ok=True)
     
@@ -21,9 +21,6 @@ def extract_infra1_images(bag_path, output_dir):
     # Open the bag file
     with rosbag.Bag(bag_path, 'r') as bag:
         # Get the total number of messages in the desired topic for progress bar
-
-        topic = '/grayscale_camera/image_raw'
-        
         # Initialize the progress bar
         with tqdm(total=bag.get_message_count(topic_filters=[topic]), desc="Extracting images", unit="image") as pbar:
             for topic, msg, t in bag.read_messages(topics=[topic]):
@@ -53,7 +50,12 @@ def extract_infra1_images(bag_path, output_dir):
             f.write(f"{ts}\n")
 
 if __name__ == '__main__':
-    # Example usage
+    if len(sys.argv) < 3:
+        print("Usage: python ims_from_rosbag.py <bag_path> <output_dir> [topic]")
+        sys.exit(1)
+
     bag_path = sys.argv[1]
     output_dir = sys.argv[2]
-    extract_infra1_images(bag_path, output_dir)
+    topic = sys.argv[3] if len(sys.argv) > 3 else "/grayscale_camera/image_raw"
+
+    extract_infra1_images(bag_path, output_dir, topic)
