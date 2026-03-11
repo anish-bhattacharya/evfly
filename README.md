@@ -231,15 +231,51 @@ python data_gather/rosbag_metavision-ros-driver_to_DVSmsgs.py /path/to/rosbag.ba
 ```
 </details>
 
-Next, we need to extract the infrared image timestamps, convert the events data to h5 format, run image reconstruction from the events, and finally calibrate the two image feeds. We provide the script `data_gather/process_calib.sh` to run these steps. Adjust the paths in the script as necessary. You will need to install these notable dependencies:
-- e2calib, install via the steps under [e2calib: Image Reconstruction](https://github.com/uzh-rpg/e2calib/tree/main?tab=readme-ov-file#image-reconstruction);
-- [Kalibr multi-camera calibration](https://github.com/ethz-asl/kalibr/wiki/multiple-camera-calibration).
+Next, we need to extract the images and their timestamps from the rosbag. Note that you will need to source a ros installation for this to work (`source /opt/ros/noetic/setup.bash` or `source /path/to/evfly_ws/devel/setup.bash`) or use the conda environment provided in `data_gather/environment.yml`.
+```
+python data_gather/ims_from_rosbag.py \
+    /path/to/dvs_msgs_rosbag.bag \
+    /path/to/output/bag_images \
+    /optional/topic/name
+```
 
-Then you can run our script:
+Then, use e2calib to convert the events data to h5 format:
 ```
-bash data_gather/process_calib.sh /path/to/calibration/rosbag <optional_GPU_ID>
+git clone https://github.com/uzh-rpg/e2calib.git
+python e2calib/python/convert.py \
+    /path/to/dvs_msgs_rosbag.bag \
+    -o /path/to/output/events.h5 \
+    -t /capture_node/events
 ```
-At the end of the script, the kalibr docker container will be launched, and you should run the following commands. This may take some time. If all goes well, calibration will be successful and txt, yaml, and pdf files will be generated with both cameras' parameters.
+
+Then, run image reconstruction from the events:
+```
+CUDA_VISIBLE_DEVICES=<GPU_ID> python e2calib/python/offline_reconstruction.py \
+    /path/to/output/events.h5 \
+    --height 480 \
+    --width 640 \
+    --timestamps_file /path/to/output/bag_images/timestamps.txt \
+    --output /path/to/output/reconstructions \
+    --upsample_rate 1
+```
+
+Then, merge the reconstructions and bag_images into a new rosbag:
+```
+python data_gather/images_to_bags.py \
+    --image_folders /path/to/output/reconstructions \
+                    /path/to/output/bag_images \
+    --topics /cam0/image_raw /cam1/image_raw \
+    --output_bag /path/to/output/kalibr_rosbag.bag
+```
+
+Finally, after installing [Kalibr multi-camera calibration](https://github.com/ethz-asl/kalibr/wiki/multiple-camera-calibration), enter the kalibr docker container:
+```
+FOLDER=/path/to/output # where kalibr_rosbag.bag is located
+docker run -it -e "DISPLAY" -e "QT_X11_NO_MITSHM=1" \
+    -v "/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+    -v "$FOLDER:/data" kalibr
+```
+When inside the kalibr docker container, run the following commands to calibrate the cameras:
 ```
 source devel/setup.bash
 rosrun kalibr kalibr_calibrate_cameras \
@@ -247,6 +283,7 @@ rosrun kalibr kalibr_calibrate_cameras \
     --models pinhole-radtan pinhole-radtan \
     --topics /cam0/image_raw /cam1/image_raw
 ```
+This may take some time. If all goes well, calibration will be successful and txt, yaml, and pdf files will be generated with both cameras' parameters.
 
 #### 2. Gather in-situ depth images and events
 

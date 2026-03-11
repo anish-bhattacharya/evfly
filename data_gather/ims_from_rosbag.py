@@ -9,7 +9,7 @@ import rosbag
 from cv_bridge import CvBridge
 from tqdm import tqdm
 
-def extract_infra1_images(bag_path, output_dir, topic="/grayscale_camera/image_raw"):
+def extract_infra1_images(bag_path, output_dir, topic):
     # Create the output directory if it does not exist
     os.makedirs(output_dir, exist_ok=True)
     
@@ -56,6 +56,6 @@ if __name__ == '__main__':
 
     bag_path = sys.argv[1]
     output_dir = sys.argv[2]
-    topic = sys.argv[3] if len(sys.argv) > 3 else "/grayscale_camera/image_raw"
+    topic = sys.argv[3] if len(sys.argv) > 3 else "/camera/infra1/image_rect_raw"
 
     extract_infra1_images(bag_path, output_dir, topic)

@@ -17,7 +17,7 @@ dependencies:
   - opencv                      # cv2 (includes all codecs)
 
   # ----- HDF5 / e2calib -----
-  - h5py                        # HDF5 file read/write (used by h5writer)
+  - h5py=3.1.0                  # HDF5 file read/write (used by h5writer)
   - numpy                       # array ops, pulled in by most deps anyway
 
   # ----- Utilities -----
@@ -28,4 +28,6 @@ dependencies:
   - pip
   - pip:
     - pyyaml                    # often needed by ROS message parsers at runtime
+    - rospy                     # ROS Python client library (via pip extra index)
+    - rosbag                    # rosbag Python tools (via pip extra index)
 
