@@ -195,7 +195,41 @@ In our work, we use a Intel Realsense D435 depth camera with either a Prophesee 
 
 Record a chessboard sequence via `rosbag record` with the D435 and the event camera, recording the infrared1 feed and events. The relevant launch file is `data_gather/launch/events_and_d435.launch`, and you may use the bagging script `data_gather/bag_evs_d435_calib.sh`. We recommend holding the dual-camera setup still and moving the chessboard in front of it. Due to the events->images step later, you must start recording data with the board fully covering the event camera field of view then slowly back up and move the board around for collection.
 - D435: Ensure that you are recording the D435 infrared images by setting the argument `enable_infra` to true in its launch file. When you use librealsense and ROS1 to run the camera you should see that `/camera/infra1/image_rect_raw` is aligned to `/camera/depth/image_rect_raw`.
-- Event camera: Make sure that your event camera is focused properly and also publishing an eventstream. In our experience, the DAVIS ROS1 packages [dv-ros](https://gitlab.com/inivation/dv/dv-ros) or [rpg_dvs_ros](https://github.com/uzh-rpg/rpg_dvs_ros) or Prophesee Metavision ROS1 package [by Bernd Pfrommer](https://github.com/ros-event-camera/metavision_driver) were fast enough to perform approximate time-synchronization with the D435. With the [Prophesee-provided package](https://github.com/prophesee-ai/prophesee_ros_wrapper) we observed a small lag making it unusable for calibration. Note that if using a non-DVS rosmsg type, you might have to convert your event camera data in the rosbag to use the DVS message format first using this script: `data_gather/rosbag_metavision-ros-driver_to_DVSmsgs.py`.
+- Event camera: Make sure that your event camera is focused properly and also publishing an eventstream. In our experience, the DAVIS ROS1 packages [dv-ros](https://gitlab.com/inivation/dv/dv-ros) or [rpg_dvs_ros](https://github.com/uzh-rpg/rpg_dvs_ros) or Prophesee Metavision ROS1 package [by Bernd Pfrommer](https://github.com/ros-event-camera/metavision_driver) were fast enough to perform approximate time-synchronization with the D435. With the [Prophesee-provided package](https://github.com/prophesee-ai/prophesee_ros_wrapper) we observed a small lag making it unusable for calibration. Note that if using a non-DVS rosmsg type (e.g. if you use Bernd's driver), you must first convert the rosbag to have event messages in DVS message type before continuing with the calibration process. You can do this using the script `data_gather/rosbag_metavision-ros-driver_to_DVSmsgs.py`, which requires Bernd's package [`event_camera_py`](https://github.com/ros-event-camera/event_camera_py) as well as RPG Lab's `dvs_msgs`(https://github.com/uzh-rpg/rpg_dvs_ros):
+
+<details>
+<summary>Using the event msg conversion script</summary>
+
+Instructions for installing event_camera_py for ROS1 (full instructions including ROS2 are [here](https://github.com/ros-event-camera/event_camera_py)):
+```
+cd ~/evfly_ws/src
+repo=event_camera_py
+url=https://github.com/ros-event-camera/${repo}.git
+git clone ${url}
+[ -f ${repo}/${repo}.repos ] && vcs import < ${repo}/${repo}.repos ; cd ..
+rosdep install --from-paths . --ignore-src --rosdistro=${ROS_DISTRO}
+catkin build event_camera_py
+```
+
+Install dvs_msgs for ROS1:
+```
+cd ~/evfly_ws/src
+repo=dvs_msgs
+url=https://github.com/uzh-rpg/${repo}.git
+git clone ${url}
+catkin build dvs_msgs
+```
+
+Make sure you source the workspace before running the conversion script:
+```
+source ~/evfly_ws/devel/setup.bash
+```
+
+Then run the conversion script:
+```
+python data_gather/rosbag_metavision-ros-driver_to_DVSmsgs.py /path/to/rosbag.bag /path/to/dvs_msgs_rosbag.bag
+```
+</details>
 
 Next, we need to extract the infrared image timestamps, convert the events data to h5 format, run image reconstruction from the events, and finally calibrate the two image feeds. We provide the script `data_gather/process_calib.sh` to run these steps. Adjust the paths in the script as necessary. You will need to install these notable dependencies:
 - e2calib, install via the steps under [e2calib: Image Reconstruction](https://github.com/uzh-rpg/e2calib/tree/main?tab=readme-ov-file#image-reconstruction);

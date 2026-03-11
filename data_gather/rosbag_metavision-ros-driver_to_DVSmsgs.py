@@ -86,8 +86,8 @@ with rosbag.Bag(output_bag_path, 'w') as outbag:
                 print(f'First event array batch sensor timestamp (ns): {first_sensor_timestamp}')
 
             # every 100 messages, print rosbag timestamp and the bag's total time
-            if n % 100 == 0:
-                print(f'At rosbag time {(t.to_nsec()-first_rosbag_timestamp)/1e9:.6f} / {inbag.get_end_time() - inbag.get_start_time():.6f}, processing {cd_events.shape[0]} events at this timestamp.')
+#            if n % 100 == 0:
+#                print(f'At rosbag time {(t.to_nsec()-first_rosbag_timestamp)/1e9:.6f} / {inbag.get_end_time() - inbag.get_start_time():.6f}, processing {cd_events.shape[0]} events at this timestamp.')
 
             # print(cd_events.shape)
 
