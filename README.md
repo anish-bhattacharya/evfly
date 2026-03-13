@@ -193,7 +193,7 @@ The post-training phase that fine-tunes the $D(\theta)$ model with real-world ev
 
 In our work, we use a Intel Realsense D435 depth camera with either a Prophesee Gen3 or DAVIS 346 event camera. The D435 depth images are pre-aligned with the infrared1 camera feed, which we can therefore use for calibration. In order to calibrate to the event camera, we use the e2calib procedure, including conversion of events to approximated grayscale images. Note that we utilize ROS1, e2vid, and Kalibr for the calibration process.
 
-Record a chessboard sequence via `rosbag record` with the D435 and the event camera, recording the infrared1 feed and events. The relevant launch file is `data_gather/launch/events_and_d435.launch`, and you may use the bagging script `data_gather/bag_evs_d435_calib.sh`. We recommend holding the dual-camera setup still and moving the chessboard in front of it. Due to the events->images step later, you must start recording data with the board fully covering the event camera field of view then slowly back up and move the board around for collection.
+Record a chessboard/aprilboard sequence via `rosbag record` with the D435 and the event camera, recording the infrared1 feed and events. The relevant launch file is `data_gather/launch/events_and_d435.launch`, and you may use the bagging script `data_gather/bag_evs_d435_calib.sh`. We recommend holding the dual-camera setup still and moving the chessboard in front of it. Due to the events->images step later, you must start recording data with the board fully covering the event camera field of view then slowly back up and move the board around for collection.
 - D435: Ensure that you are recording the D435 infrared images by setting the argument `enable_infra` to true in its launch file. When you use librealsense and ROS1 to run the camera you should see that `/camera/infra1/image_rect_raw` is aligned to `/camera/depth/image_rect_raw`.
 - Event camera: Make sure that your event camera is focused properly and also publishing an eventstream. In our experience, the DAVIS ROS1 packages [dv-ros](https://gitlab.com/inivation/dv/dv-ros) or [rpg_dvs_ros](https://github.com/uzh-rpg/rpg_dvs_ros) or Prophesee Metavision ROS1 package [by Bernd Pfrommer](https://github.com/ros-event-camera/metavision_driver) were fast enough to perform approximate time-synchronization with the D435. With the [Prophesee-provided package](https://github.com/prophesee-ai/prophesee_ros_wrapper) we observed a small lag making it unusable for calibration. Note that if using a non-DVS rosmsg type (e.g. if you use Bernd's driver), you must first convert the rosbag to have event messages in DVS message type before continuing with the calibration process. You can do this using the script `data_gather/rosbag_metavision-ros-driver_to_DVSmsgs.py`, which requires Bernd's package [`event_camera_py`](https://github.com/ros-event-camera/event_camera_py) as well as RPG Lab's `dvs_msgs`(https://github.com/uzh-rpg/rpg_dvs_ros):
 
@@ -270,16 +270,14 @@ python data_gather/images_to_bags.py \
 
 Finally, after installing [Kalibr multi-camera calibration](https://github.com/ethz-asl/kalibr/wiki/multiple-camera-calibration), enter the kalibr docker container:
 ```
-FOLDER=/path/to/output # where kalibr_rosbag.bag is located
-docker run -it -e "DISPLAY" -e "QT_X11_NO_MITSHM=1" \
-    -v "/tmp/.X11-unix:/tmp/.X11-unix:rw" \
-    -v "$FOLDER:/data" kalibr
+bash data_gather/run_kalibr.sh /path/to/output # where kalibr_rosbag.bag is located
 ```
 When inside the kalibr docker container, run the following commands to calibrate the cameras:
 ```
 source devel/setup.bash
 rosrun kalibr kalibr_calibrate_cameras \
-    --bag /data/rosbag.bag --target /data/chessboard.yaml \
+    --bag /data/kalibr_rosbag.bag \
+    --target /data/aprilboard.yaml \
     --models pinhole-radtan pinhole-radtan \
     --topics /cam0/image_raw /cam1/image_raw
 ```
