@@ -251,7 +251,7 @@ python e2calib/python/convert.py \
 Then, run image reconstruction from the events:
 ```
 CUDA_VISIBLE_DEVICES=<GPU_ID> python e2calib/python/offline_reconstruction.py \
-    /path/to/output/events.h5 \
+    --h5file /path/to/output/events.h5 \
     --height 480 \
     --width 640 \
     --timestamps_file /path/to/output/bag_images/timestamps.txt \

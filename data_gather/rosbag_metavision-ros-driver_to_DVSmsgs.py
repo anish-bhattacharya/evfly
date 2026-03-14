@@ -3,7 +3,10 @@
 import rosbag, rospy
 import sys
 # https://github.com/ros-event-camera/event_camera_py/
-from event_camera_py import Decoder # need to catkin build event_camera_py
+try:
+    from event_camera_py import Decoder # need to catkin build event_camera_py
+except:
+    from event_array_py import Decoder
 # https://github.com/uzh-rpg/rpg_dvs_ros
 from dvs_msgs.msg import EventArray, Event # need to catkin build dvs_msgs from rpg_dvs_ros
 import numpy.lib.recfunctions as rf
