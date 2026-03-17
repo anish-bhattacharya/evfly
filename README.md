@@ -53,7 +53,8 @@ We demonstrate this across two quadrotor-event camera platforms in multiple sett
 
 Note that if you'd only like to train models, and *not* run the Flightmare simulation to test models in simulation, you can simply clone this repository and skip straight to section [Train](#train).
 
-#### (optional) Set up a catkin workspace
+<details>
+<summary><strong>(optional) Set up a catkin workspace</strong></summary>
 
 If you'd like to start a *new* catkin workspace, then a typical workflow is (note that this code has only been tested with ROS Noetic and Ubuntu 20.04):
 ```
@@ -66,7 +67,10 @@ catkin config --merge-devel
 catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-fdiagnostics-color
 ```
 
-#### Clone this repository and set up
+</details>
+
+<details>
+<summary><strong>Clone this repository and set up</strong></summary>
 
 Once inside your desired workspace, clone this repository:
 ```
@@ -102,6 +106,8 @@ export FLIGHTMARE_PATH=/path/to/evfly/flightmare
 source ~/evfly_ws/devel/setup.bash
 ```
 
+</details>
+
 ## Test (simulation)
 
 As we describe in the paper, testing the model in real-time simulation necessitates estimating eventstreams via difference-of-log-images, which is out-of-distribution for the Vid2E-trained models. Therefore, do not expect high success rates in simulation test runs.
@@ -119,14 +125,18 @@ configargparse
 matplotlib
 ```
 
-#### Download pretrained weights
+<details>
+<summary><strong>Download pretrained weights</strong></summary>
 
 Download `pretrained_models.tar` (50MB) from [Datashare](https://upenn.app.box.com/v/evfly-grasp-rpg). This tarball includes a number of simulation-pre-trained and real-fine-tuned models. For simulation testing in the provided forest environment, we will use the jointly-trained $D(\theta),V(\phi)$ model `sim_forest_DthetaVphi.pth`.
 ```
 tar -xvf <path/to/pretrained_models.tar>
 ```
 
-#### (optional) Edit the config file
+</details>
+
+<details>
+<summary><strong>(optional) Edit the config file</strong></summary>
 
 *If you are just interested in the same forest environment we use in the paper, you should not need to edit the config file.*
 
@@ -137,7 +147,10 @@ Relevant notes for the `flightmare/flightpy/configs/vision/config.yaml` file:
 
 When running the simulation (the following section), you can set any number `N` of trials to run. To run trials on the same, specified environment index, set `datagen: 1` and `rollout: 0`.
 
-#### Run the simulation
+</details>
+
+<details>
+<summary><strong>Run the simulation</strong></summary>
 
 The `launch_evaluation.bash` script launches Flightmare and the trained model for event-based flight when using `vision` mode. To run trials:
 ```
@@ -146,11 +159,14 @@ bash launch_evaluation.bash <N> vision
 
 Some details: If you look at the bash script, you'll see multiple python scripts being run. `envtest/ros/run_competition.py` subscribes to input images, computes approximated event batches, and passes them to the model to get desired velocity commands. It also selects the config file from which to load model parameters, currently set to `learner/configs/eval_config_sim_joint.txt` which utilizes the jointly-trained $D(\theta)$ and $V(\phi)$ model from simulation. `envtest/ros/evaluation_node.py` counts crashes, starts and aborts trials, and prints other statistics to the console. The topic `/debug_img1` streams images from the quadrotor grayscale camera and overlays approximate events on it in red-blue color. `/debug_img2` shows the model predicted depth reconstruction with an overlaid arrow indicating the model's output velocity command.
 
+</details>
+
 ## Dataset generation (simulation)
 
 To create a dataset of events, depth images, and desired velocity commands from execution of the privileged expert in simulation, we must first collect data from expert rollouts, then convert collected images into approximated events, and finally package the data into h5 file formats that our training script can read.
 
-#### 1. Run expert rollouts and collect data
+<details>
+<summary><strong>1. Run expert rollouts and collect data</strong></summary>
 
 Ensure that the `flightmare/flightpy/configs/vision/config.yaml` parameters are unchanged. Default evaluation parameters specified in `envtest/ros/evaluation_config.yaml` resets the environment once the drone reaches the target `x=60`, the drone exits a specified bounding box, or the trial times out.
 
@@ -164,7 +180,10 @@ After populating the `rollouts` directory, you can move the relevant trajectory 
 mv envtest/ros/rollouts/* data/datasets/new_dataset/
 ```
 
-#### 2. Run Vid2E to convert images to events (GPU installation of Vid2E required for now)
+</details>
+
+<details>
+<summary><strong>2. Run Vid2E to convert images to events (GPU installation of Vid2E required for now)</strong></summary>
 
 Install [Vid2E](https://github.com/uzh-rpg/rpg_vid2e) then run the following script to approximate events from the collected images. Please note that the `--cpu` flag is legacy and not supported as of now. A numpy object array `evs_frames.npy` is created that contains a sequence of event frames for each trajectory in the dataset. Each event frame is a float array for all events within the time window between consecutive image frames, and contains the sum of positive and negative events at a given pixel location multiplied by the corresponding contrast thresholds (defaults values are +/-0.2).
 
@@ -174,7 +193,10 @@ python utils/to_events.py --dataset data/datasets/new_dataset --output_path data
 
 NOTE: If you struggle to install dependencies and run the above, I have included a sample conda `vid2e_environment.yml` that should include the packages necessary to run the above script. It is not minimal, and has many unnecessary packages, but you may try it: `conda env create -f vid2e_environment.yml`.
 
-#### 3. (optional) Package data into h5 files
+</details>
+
+<details>
+<summary><strong>3. (optional) Package data into h5 files</strong></summary>
 
 Our dataloader can read data from the format of trajectory folders+events npy file, but dataloading is faster when data is packaged into h5 files. To do this, run the following script to create a `new_dataset.h5` file that contains the events, depth images, and telemetry data for each trajectory in the dataset.
 ```
@@ -185,11 +207,14 @@ You can confirm the contents of the h5 file by running:
 python utils/to_h5.py /absolute/path/to/new_dataset view False
 ```
 
+</details>
+
 ## Dataset generation (real-world)
 
 The post-training phase that fine-tunes the $D(\theta)$ model with real-world event camera data relies on a calibrated event camera-depth camera pair. We provide scripts to collect data, time-synchronize event batches with depth images, align them, and form a dataset.
 
-#### 1. Calibrate event camera and depth camera
+<details>
+<summary><strong>1. Calibrate event camera and depth camera</strong></summary>
 
 In our work, we use a Intel Realsense D435 depth camera with either a Prophesee Gen3 or DAVIS 346 event camera. The D435 depth images are pre-aligned with the infrared1 camera feed, which we can therefore use for calibration. In order to calibrate to the event camera, we use the e2calib procedure, including conversion of events to approximated grayscale images. Note that we utilize ROS1, e2vid, and Kalibr for the calibration process.
 
@@ -283,7 +308,10 @@ rosrun kalibr kalibr_calibrate_cameras \
 ```
 This may take some time. If all goes well, calibration will be successful and txt, yaml, and pdf files will be generated with both cameras' parameters.
 
-#### 2. Gather in-situ depth images and events
+</details>
+
+<details>
+<summary><strong>2. Gather in-situ depth images and events</strong></summary>
 
 Now we may gather depth and events to fine-tune the $D(\theta)$ model. `data_gather` is a ROS1 package useful for data collection, which must be built:
 ```
@@ -301,7 +329,10 @@ bash data_gather/bag_evs_d435.sh
 ```
 We recommend gathering around a minute of handheld data with a variety of motions (rolling/pitching/forward/backward/left/right/fast/slow).
 
-#### 3. Align and package data
+</details>
+
+<details>
+<summary><strong>3. Align and package data</strong></summary>
 
 Depending on the size of your rosbag file, you may want to splice the rosbag into smaller parts, which can then be treated as trajectories during the training process. We provide the following script to create smaller rosbags of length 10s each:
 ```
@@ -317,13 +348,19 @@ bash data_gather/prep-dataset.sh new_dataset
 ```
 Now you should be able to use this h5 dataset file for training.
 
+</details>
+
 ## Train
 
-#### (optional) Download a dataset
+<details>
+<summary><strong>(optional) Download a dataset</strong></summary>
 
 We provide datasets for the simulated forest environment and the real forest environment presented in the paper. The corresponding h5 dataset files can be downloaded from the [Datashare](https://upenn.box.com/v/evfly-grasp-rpg) in the folder `datasets`. Please read the README for details on the provided datasets and the data format.
 
-#### Train a model
+</details>
+
+<details>
+<summary><strong>Train a model</strong></summary>
 
 We provide a script `learner.py` that instantiates a Learner class, which can be used for loading models and datasets for purposes like model evaluation and data analysis, as well as training a new or pre-trained model. Training configuration is specified in the arguments in `learner/configs/config.txt`. Relevant files for debugging, as well as model checkpoints and tensorboard files are saved in the `learner/logs` directory. Note that we have only confirmed training functionality with a Nvidia GPU. To train:
 ```
@@ -337,7 +374,10 @@ tensorboard --logdir learner/logs
 
 Please refer to the code to understand what each argument in the config file does. Some argument descriptions are in the later section "Useful config details for training or testing".
 
-#### Evaluate a model
+</details>
+
+<details>
+<summary><strong>Evaluate a model</strong></summary>
 
 You can evaluate a model's performance for both depth prediction and velocity command prediction using the provided script `learner/evaluation_tools.py`. This script generates plots to compare ground truth vs. predicted velocity commands (valid for simulation only, where we have expert velocity commands) and a gif visualization of input events, predicted depth and velocity commands, and ground truth. These plots or visualizations are saved in the evaluation's workspace, saved in the `learner/logs` directory.
 
@@ -355,7 +395,10 @@ For testing the real forest deployment model that uses a ViT-LSTM model from [an
 python learner/evaluation_tools.py --config learner/configs/eval_config_origunet_w_vitlstm.txt
 ```
 
-#### Useful details for training or testing
+</details>
+
+<details>
+<summary><strong>Useful details for training or testing</strong></summary>
 
 - You can train on multiple datasets by listing them in the dataset argument: `dataset = [real_forest-a, real_forest-b, real_forest-c, real_forest-d, real_forest-e]`.
 - `evs_min_cutoff` specifies the bottom percentage threshold of events to cut out from event frames prior to feeding to the model. This helps cut out some of the high-texture events in real world trials, such as grass texture. For simulation datasets we keep this at 0 but for real datasets we typically set it to 0.15 (15%). You should not have to tune this parameter.
@@ -365,6 +408,8 @@ python learner/evaluation_tools.py --config learner/configs/eval_config_origunet
 - During training, the argument `loss_weights = [10.0, 1.0]` specifies that the first loss parameter (velocity supervision MSE loss) is up-weighted by a factor of 10.0 and the second loss parameter (depth supervision MSE loss) is weighted by 1.0.
 - During training, the argument `optional_loss_param = [5.0, -1.0]` specifically up-weights velocity prediction loss further by 5.0 where ground truth is executing a dodging maneuver (y- or z- command nonzero) and scales the depth prediction loss by the inverse depth values to up-weight the loss for closer objects.
 - Note that the evaluation gif for a training example (with default parameters, one training and two validation gifs are generated) might exhibit data augmentation artifacts, like being left-right flipped.
+
+</details>
 
 ## Real-world deployment
 
