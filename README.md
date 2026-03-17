@@ -327,7 +327,7 @@ Once both cameras are running, start the bagging script to collect the necessary
 ```
 bash data_gather/bag_evs_d435.sh
 ```
-We recommend gathering around a minute of handheld data with a variety of motions (rolling/pitching/forward/backward/left/right/fast/slow).
+We recommend gathering around 30 seconds of handheld data with a variety of motions (rolling/pitching/forward/backward/left/right/fast/slow).
 
 </details>
 
